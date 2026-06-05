@@ -20,10 +20,13 @@ enum Spacing {
 }
 
 /// Corner-radius scale, kept small on purpose so buttons and cards feel related.
-/// Starting values — tune against the Figma once exact radii are known.
+/// Values confirmed against the Phase 2 Figma onboarding screens.
 enum CornerRadius {
-    /// Full-width call-to-action buttons (substantial, per the designs).
-    static let button: CGFloat = 18
-    /// Floating cards — calendar card, journal entry card, etc.
-    static let card: CGFloat = 24
+    /// Small pill — the period chips on the view-mode cards (Figma ≈ 2.88).
+    static let chip: CGFloat = 3
+    /// Full-width call-to-action buttons (Figma: 12).
+    static let button: CGFloat = 12
+    /// Onboarding selection cards (Figma: 12). The large floating cards on the
+    /// calendar/journal screens may differ — revisit when we build Phase 5.
+    static let card: CGFloat = 12
 }

@@ -370,6 +370,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Memory Journal uses the camera only to add photos to your journal entries. Your photos stay on this device — Memory Journal never uploads or shares them.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Memory Journal uses the microphone only to record voice notes for your journal entries. Your recordings stay on this device — Memory Journal never uploads or shares them.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Memory Journal accesses your photo library only to add photos you choose to your journal entries. Your photos stay on this device — Memory Journal never uploads or shares them.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -401,6 +405,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Memory Journal uses the camera only to add photos to your journal entries. Your photos stay on this device — Memory Journal never uploads or shares them.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Memory Journal uses the microphone only to record voice notes for your journal entries. Your recordings stay on this device — Memory Journal never uploads or shares them.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Memory Journal accesses your photo library only to add photos you choose to your journal entries. Your photos stay on this device — Memory Journal never uploads or shares them.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

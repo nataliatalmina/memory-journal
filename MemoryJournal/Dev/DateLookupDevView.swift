@@ -23,6 +23,11 @@ struct DateLookupDevView: View {
     @State private var count = 5
     @State private var results: [Entry] = []
 
+    // Onboarding preferences, so the dev tab can show the chosen mode and reset
+    // the flow for re-testing.
+    @AppStorage(PreferenceKey.hasOnboarded) private var hasOnboarded = false
+    @AppStorage(PreferenceKey.lookbackMode) private var savedMode: LookbackMode = .fiveMonths
+
     var body: some View {
         NavigationStack {
             Form {
@@ -67,6 +72,15 @@ struct DateLookupDevView: View {
                     Button("Reseed sample data", role: .destructive) {
                         SampleData.reseed(context)
                         runQuery()
+                    }
+                }
+
+                Section("Onboarding") {
+                    LabeledContent("Chosen view-mode", value: savedMode.title)
+                    // Flipping this flag false makes RootView swap back to the
+                    // onboarding flow immediately — handy for re-testing it.
+                    Button("Replay onboarding", role: .destructive) {
+                        hasOnboarded = false
                     }
                 }
             }

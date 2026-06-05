@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Fonts to register at launch. These filenames must exist in the app
+	     bundle (they're in MemoryJournal/DesignSystem/Fonts and bundled by the
+	     file-system synchronized group). We register only the two weights the
+	     design system uses; the rest of the PP Kyoto family is present in the
+	     repo and can be added here if a future screen needs another weight.
+	     The rest of Info.plist is still auto-generated (GENERATE_INFOPLIST_FILE)
+	     and merged with this file. -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>PPKyoto-Medium.otf</string>
+		<string>PPKyoto-MediumItalic.otf</string>
+	</array>
+</dict>
+</plist>

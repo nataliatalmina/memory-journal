@@ -59,6 +59,23 @@ The single most important query in this app: **"give me all entries whose month/
 - **Media fields** are still just filenames/strings (`photoFilenames`, `voiceNoteFilename`) — real capture and on-disk file storage is deferred to a later phase.
 - **Testing:** a `MemoryJournalTests` unit-test target exists, using the Swift Testing framework. Run with the shared `MemoryJournal` scheme.
 
+### Phase 2 decisions (recorded)
+
+- **Onboarding gate:** a single `@AppStorage` bool `hasOnboarded` (key in `App/Preferences.swift`) decides onboarding vs. tab bar in `App/RootView.swift`. The flow is a coordinator (`Onboarding/OnboardingContainerView.swift`) that owns the current step; each screen is its own view and calls a closure to advance.
+- **View-mode persistence:** the chosen window is `LookbackMode` (`Models/LookbackMode.swift`, raw values `fiveMonths`/`fiveYears`), persisted via `@AppStorage` under key `lookbackMode`. Onboarding screen 2 writes it on Continue; Settings (Phase 6) will edit it; the journal query reads it via `LookbackMode.lookupMode`.
+- **Splash behaviour:** AUTO-ADVANCE ONLY (no tap), per owner. Wordmark + tagline fade in line-by-line, then it advances (~3.2s). Timing is cancel-safe (`.task`). Accessibility note: a purely timed splash with no control could rush VoiceOver users — revisit if testers find it fast.
+- **Default view-mode:** Five-Month is pre-selected (matches the Figma, which shows it teal/selected). Exactly one card is always selected, so Continue is always enabled.
+- **GIF playback:** SwiftUI can't animate GIFs, so `Shared/GIFImage.swift` decodes frames with ImageIO and steps them via `TimelineView` (no UIKit view, no dependency). Frames are downsampled (the source `Loading.gif` is 2048²) and cached. The GIF has alpha, so it sits correctly on the pale background.
+- **Permissions:** `Services/MediaPermissions.swift` wraps Camera (`AVCaptureDevice`), Photo Library (`PHPhotoLibrary`, `.readWrite`), Microphone (`AVAudioApplication`, the iOS-17+ API). It ONLY requests/reads authorization — never stores or transmits media (honours the privacy promise). Usage strings live in build settings as `INFOPLIST_KEY_NS*UsageDescription`. Permissions are optional; "Maybe later" and "Continue" both finish. **Each enable button is sage (`appSecondary`) until granted, then turns teal (`appPrimary`); the label never changes** (per Figma `143-160` initial / `198-461` granted). A denied button stays sage and its tap deep-links to Settings (iOS only prompts once).
+- **Privacy policy:** `Onboarding/PrivacyPolicyView.swift` is in-app, scrollable, and **clearly marked DRAFT** — replace with reviewed wording before shipping.
+- **Resolved design decisions:**
+  - *Button labels:* **italic** serif (PP Kyoto MediumItalic) everywhere, per this file (confirmed by owner). `AppButton` and the permission buttons use `.kyotoItalic`.
+  - *One teal only:* use `appPrimary` (`#005363`) for the wordmark and chips. The Figma's slightly greener `#005d4f` was a mistake (confirmed) — do not add it.
+  - *Dynamic chips:* approved — the period chips are computed from "now" so they stay accurate.
+  - *Splash:* the tagline fades in line by line — "Our memories make us human" first, then "Don't let them fade away".
+- **Typography — DONE:** PP Kyoto is registered and active. The full family lives in `DesignSystem/Fonts/`; `UIAppFonts` (in the project-root `Info.plist`) registers the two weights the design system uses — PostScript names **`PPKyoto-Medium`** and **`PPKyoto-MediumItalic`**. `.kyoto`/`.kyotoItalic` use `.custom(...)` with those names, and the tab bar uses `PPKyoto-MediumItalic` via `AppAppearance`. (The other weights are bundled and can be exposed by adding them to `UIAppFonts` + a helper.)
+- **DEBUG:** the dev tab (`Dev/DateLookupDevView.swift`) shows the chosen mode and a "Replay onboarding" button (resets `hasOnboarded`).
+
 ## Screens
 
 There are four main screens, reached via a bottom tab bar (Journal, Calendar, Prompts, Settings), plus onboarding.
@@ -89,8 +106,8 @@ The Figma designs commit to a calm, editorial, serif-forward aesthetic. Match it
   - `PPKyoto-Medium.otf` — the serif used throughout (headings, body, general text).
   - `PPKyoto-MediumItalic.otf` — italic serif for button labels ("Save your memory", "Create your memory", "Get started with prompt", "Continue"), tab bar labels, and anywhere italic is needed.
 - Register both fonts: add the `.otf` files to the project, declare them under `UIAppFonts` in Info.plist, and wrap them in a reusable text style / `Font` extension so views reference named styles (e.g. `.kyoto(size:)`, `.kyotoItalic(size:)`) rather than raw font names.
-- The exact PostScript names inside the `.otf` files may differ from the filenames — confirm them (e.g. via Font Book) when registering, and use the real PostScript name in code.
-- Until the files are added, fall back to the closest built-in serif so layout is visible, with a clearly-marked TODO to swap in PP Kyoto.
+- The exact PostScript names inside the `.otf` files may differ from the filenames — confirm them when registering, and use the real PostScript name in code. **(Confirmed: they match the filenames — `PPKyoto-Medium` and `PPKyoto-MediumItalic`.)**
+- ~~Until the files are added, fall back to the closest built-in serif.~~ **DONE (Phase 2):** the full PP Kyoto family is in `DesignSystem/Fonts/`; `PPKyoto-Medium.otf` + `PPKyoto-MediumItalic.otf` are registered via `UIAppFonts` in the project-root `Info.plist` (merged with the auto-generated plist), and `.kyoto`/`.kyotoItalic` now resolve to the real font.
 
 **Components & layout:**
 
@@ -114,7 +131,7 @@ When in doubt about a visual detail, ask to see the relevant Figma screen rather
 
 - [x] **Phase 0 — Scaffolding:** Xcode project, folder structure, design tokens (colors, fonts, spacing), this CLAUDE.md, app entry point, empty tab bar with four tabs.
 - [x] **Phase 1 — Data + the core query:** SwiftData model, seeded sample data, the "same date across N years/months" query, verified in a throwaway list view.
-- [ ] **Phase 2 — Onboarding:** splash → view-mode selection → media permissions → privacy policy link.
+- [x] **Phase 2 — Onboarding:** splash → view-mode selection → media permissions → privacy policy link.
 - [ ] **Phase 3 — Journal/Home screen** (empty state, create entry, past-entries list, media in entries).
 - [ ] **Phase 4 — Prompts screen.**
 - [ ] **Phase 5 — Calendar screen.**

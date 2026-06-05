@@ -40,7 +40,8 @@ struct MemoryJournalApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootTabView()
+            // `RootView` shows onboarding on first launch, the tab bar afterwards.
+            RootView()
         }
         // Hand the container to the whole view tree. Views then reach it via
         // `@Environment(\.modelContext)` or `@Query`.

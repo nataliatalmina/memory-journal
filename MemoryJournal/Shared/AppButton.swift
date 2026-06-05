@@ -31,6 +31,8 @@ struct AppButton: View {
 
     let title: String
     var style: Style = .primary
+    /// Label point size. Default 20 matches the Figma "Continue" call-to-action.
+    var labelSize: CGFloat = 20
     /// What to run when tapped. `() -> Void` is the type of a closure that takes
     /// no arguments and returns nothing — i.e. a plain "do this" block.
     let action: () -> Void
@@ -38,7 +40,8 @@ struct AppButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.kyotoItalic(size: 18))
+                // Italic serif button label (PP Kyoto MediumItalic), per CLAUDE.md.
+                .font(.kyotoItalic(size: labelSize))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)        // stretch to the full available width
                 .padding(.vertical, Spacing.md)    // comfortable tap height

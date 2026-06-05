@@ -21,11 +21,9 @@ enum AppAppearance {
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor(Color.appSurface)   // off-white tab bar
 
-        // Italic-serif font on the tab labels.
-        // TODO(PP Kyoto): use UIFont(name: "PPKyoto-MediumItalic", size: 11)
-        // once the custom font is registered; until then, system serif italic.
+        // Italic-serif font on the tab labels: PP Kyoto Medium Italic.
         let labelAttributes: [NSAttributedString.Key: Any] = [
-            .font: serifItalicFont(size: 11)
+            .font: tabLabelFont(size: 11)
         ]
 
         // A tab bar has several layouts (stacked on phones, inline/compact on
@@ -41,15 +39,10 @@ enum AppAppearance {
         UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 
-    /// Closest built-in italic serif as a `UIFont`.
-    /// (UIKit needs a `UIFont` here, not a SwiftUI `Font` — different types.)
-    private static func serifItalicFont(size: CGFloat) -> UIFont {
-        let base = UIFont.systemFont(ofSize: size)
-        if let descriptor = base.fontDescriptor
-            .withDesign(.serif)?
-            .withSymbolicTraits(.traitItalic) {
-            return UIFont(descriptor: descriptor, size: size)
-        }
-        return base   // fall back to plain system font if the serif isn't available
+    /// PP Kyoto Medium Italic as a `UIFont` (UIKit needs a `UIFont` here, not a
+    /// SwiftUI `Font`). Falls back to the system font if the custom font isn't
+    /// registered for some reason.
+    private static func tabLabelFont(size: CGFloat) -> UIFont {
+        UIFont(name: "PPKyoto-MediumItalic", size: size) ?? .systemFont(ofSize: size)
     }
 }
