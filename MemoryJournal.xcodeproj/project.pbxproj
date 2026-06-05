@@ -6,11 +6,27 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		AAAA0000000000000000A00B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E1BB38902FD2E99E000806A3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E1BB38972FD2E99E000806A3;
+			remoteInfo = MemoryJournal;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		AAAA0000000000000000A002 /* MemoryJournalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MemoryJournalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1BB38982FD2E99E000806A3 /* MemoryJournal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MemoryJournal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		AAAA0000000000000000A003 /* MemoryJournalTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MemoryJournalTests;
+			sourceTree = "<group>";
+		};
 		E1BB389A2FD2E99E000806A3 /* MemoryJournal */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = MemoryJournal;
@@ -19,6 +35,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AAAA0000000000000000A005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E1BB38952FD2E99E000806A3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				E1BB389A2FD2E99E000806A3 /* MemoryJournal */,
+				AAAA0000000000000000A003 /* MemoryJournalTests */,
 				E1BB38992FD2E99E000806A3 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				E1BB38982FD2E99E000806A3 /* MemoryJournal.app */,
+				AAAA0000000000000000A002 /* MemoryJournalTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,6 +73,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		AAAA0000000000000000A001 /* MemoryJournalTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AAAA0000000000000000A007 /* Build configuration list for PBXNativeTarget "MemoryJournalTests" */;
+			buildPhases = (
+				AAAA0000000000000000A004 /* Sources */,
+				AAAA0000000000000000A005 /* Frameworks */,
+				AAAA0000000000000000A006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AAAA0000000000000000A00A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AAAA0000000000000000A003 /* MemoryJournalTests */,
+			);
+			name = MemoryJournalTests;
+			packageProductDependencies = (
+			);
+			productName = MemoryJournalTests;
+			productReference = AAAA0000000000000000A002 /* MemoryJournalTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		E1BB38972FD2E99E000806A3 /* MemoryJournal */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E1BB38A32FD2E99F000806A3 /* Build configuration list for PBXNativeTarget "MemoryJournal" */;
@@ -80,6 +128,10 @@
 				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2610;
 				TargetAttributes = {
+					AAAA0000000000000000A001 = {
+						CreatedOnToolsVersion = 26.1.1;
+						TestTargetID = E1BB38972FD2E99E000806A3;
+					};
 					E1BB38972FD2E99E000806A3 = {
 						CreatedOnToolsVersion = 26.1.1;
 					};
@@ -100,11 +152,19 @@
 			projectRoot = "";
 			targets = (
 				E1BB38972FD2E99E000806A3 /* MemoryJournal */,
+				AAAA0000000000000000A001 /* MemoryJournalTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		AAAA0000000000000000A006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E1BB38962FD2E99E000806A3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -115,6 +175,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AAAA0000000000000000A004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E1BB38942FD2E99E000806A3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -124,7 +191,57 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		AAAA0000000000000000A00A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E1BB38972FD2E99E000806A3 /* MemoryJournal */;
+			targetProxy = AAAA0000000000000000A00B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		AAAA0000000000000000A008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nataliatalmina.MemoryJournalTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MemoryJournal.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MemoryJournal";
+			};
+			name = Debug;
+		};
+		AAAA0000000000000000A009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nataliatalmina.MemoryJournalTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MemoryJournal.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MemoryJournal";
+			};
+			name = Release;
+		};
 		E1BB38A12FD2E99F000806A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -309,6 +426,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		AAAA0000000000000000A007 /* Build configuration list for PBXNativeTarget "MemoryJournalTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AAAA0000000000000000A008 /* Debug */,
+				AAAA0000000000000000A009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E1BB38932FD2E99E000806A3 /* Build configuration list for PBXProject "MemoryJournal" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
