@@ -60,8 +60,8 @@ struct EntryContent: View {
                 excerpt(lineLimit: hasAudio ? 3 : excerptLineLimit)
             }
 
-            if hasAudio {
-                VoiceNotePlayerBar()
+            if let voiceNote = entry.voiceNoteFilename {
+                VoiceNotePlayerBar(filename: voiceNote)
             }
         }
     }
@@ -106,17 +106,43 @@ struct PhotoThumbnail: View {
     }
 }
 
-/// The inline teal voice-note player bar. Visual only in Part A — real play/pause
-/// is wired up in Part D.
+/// The inline teal voice-note player bar: play/pause + a (representative)
+/// waveform whose fill tracks playback. Playback runs through the shared
+/// `VoicePlayer`, so only one note plays at a time across the app.
+/// Pass `onRemove` in the composer to show a trailing ✕.
 struct VoiceNotePlayerBar: View {
+    let filename: String
+    var onRemove: (() -> Void)? = nil
+
+    @Environment(VoicePlayer.self) private var player
+
+    private var isPlaying: Bool { player.isPlaying(filename) }
+
     var body: some View {
         HStack(spacing: Spacing.md) {
-            Image(systemName: "play.fill")
-                .font(.system(size: 20))
-                .foregroundStyle(.white)
-            WaveformView()
+            Button { player.toggle(filename) } label: {
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(.white)
+                    .frame(width: 28, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel(isPlaying ? "Pause voice note" : "Play voice note")
+
+            WaveformView(progress: isPlaying ? player.progress : 0)
                 .frame(height: 15)
                 .frame(maxWidth: .infinity)
+
+            if let onRemove {
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Remove voice note")
+            }
         }
         .padding(.horizontal, 14)
         .frame(height: 50)

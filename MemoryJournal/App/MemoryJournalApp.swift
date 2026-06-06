@@ -17,6 +17,11 @@ struct MemoryJournalApp: App {
     // screen shares the same store.
     let container: ModelContainer
 
+    // One shared audio player for the whole app, injected into the environment so
+    // every voice-note bar (Home rows, detail, composer) plays through it — only
+    // one note can play at a time.
+    @State private var voicePlayer = VoicePlayer()
+
     init() {
         AppAppearance.configure()
 
@@ -56,5 +61,6 @@ struct MemoryJournalApp: App {
         // Hand the container to the whole view tree. Views then reach it via
         // `@Environment(\.modelContext)` or `@Query`.
         .modelContainer(container)
+        .environment(voicePlayer)
     }
 }

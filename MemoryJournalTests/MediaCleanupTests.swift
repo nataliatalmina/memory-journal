@@ -14,23 +14,23 @@ struct MediaCleanupTests {
 
     @Test func removedOriginalPhotoIsDeleted() {
         // Edit removed "b" → it should be cleaned up.
-        let orphans = MediaStore.orphanedPhotoFiles(original: ["a", "b"], session: [], final: ["a"])
+        let orphans = MediaStore.orphanedFiles(original: ["a", "b"], session: [], final: ["a"])
         #expect(orphans == ["b"])
     }
 
     @Test func addedThenRemovedPhotoIsDeleted() {
         // Added "x" and "y" this session, then removed "y" before saving.
-        let orphans = MediaStore.orphanedPhotoFiles(original: [], session: ["x", "y"], final: ["x"])
+        let orphans = MediaStore.orphanedFiles(original: [], session: ["x", "y"], final: ["x"])
         #expect(orphans == ["y"])
     }
 
     @Test func keptPhotosAreNotDeleted() {
-        let orphans = MediaStore.orphanedPhotoFiles(original: ["a"], session: ["x"], final: ["a", "x"])
+        let orphans = MediaStore.orphanedFiles(original: ["a"], session: ["x"], final: ["a", "x"])
         #expect(orphans.isEmpty)
     }
 
     @Test func everythingDroppedIsDeleted() {
-        let orphans = MediaStore.orphanedPhotoFiles(original: ["a"], session: ["x", "y"], final: ["a"])
+        let orphans = MediaStore.orphanedFiles(original: ["a"], session: ["x", "y"], final: ["a"])
         #expect(orphans == ["x", "y"])
     }
 }

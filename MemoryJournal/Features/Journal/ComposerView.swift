@@ -5,18 +5,16 @@
 //  The composer for TODAY's entry. Presented as a sheet from Home. Works in two
 //  modes from one screen:
 //    • create — `existingEntry == nil`: a fresh entry for `date`.
-//    • edit   — `existingEntry != nil`: load that entry's title/body/photos and update.
+//    • edit   — `existingEntry != nil`: load that entry's title/body/media and update.
 //
 //  Save rule (confirmed with owner): an entry needs non-whitespace BODY text.
 //  Title is optional. Photos/voice don't change that rule.
 //
-//  Photos (Part C): up to 3, from the library (PhotosPicker — needs no permission)
-//  or the camera (needs camera permission). Images are copied into the app
-//  container (MediaStore); only the FILENAMES are stored on the entry — never
-//  raw bytes, never off-device. Files are committed on Save and cleaned up on
-//  cancel so nothing is orphaned.
-//
-//  Voice (mic) is Part D and still a placeholder.
+//  Photos (Part C): up to 3, library (PhotosPicker, no permission) or camera
+//  (needs permission). Voice (Part D): ONE voice note per entry, via the mic
+//  flow (record → review → keep). All media is copied into the app container;
+//  only FILENAMES are stored on the entry — never bytes, never off-device. Files
+//  are committed on Save and cleaned up on cancel so nothing is orphaned.
 //
 
 import SwiftUI
@@ -26,6 +24,7 @@ import PhotosUI
 struct ComposerView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(VoicePlayer.self) private var player
 
     let date: Date
     var existingEntry: Entry?
@@ -36,23 +35,32 @@ struct ComposerView: View {
 
     // Photos
     private let maxPhotos = 3
-    @State private var photoFilenames: [String] = []        // working list (what will be saved)
-    @State private var originalPhotoFilenames: [String] = [] // snapshot on load (edit mode)
-    @State private var sessionFiles: Set<String> = []        // files written to disk this session
+    @State private var photoFilenames: [String] = []
+    @State private var originalPhotoFilenames: [String] = []
+    @State private var sessionFiles: Set<String> = []            // photo files written this session
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showPhotoPicker = false
     @State private var showCamera = false
     @State private var cameraDeniedAlert = false
     @State private var cameraUnavailableAlert = false
+
+    // Voice (one per entry)
+    @State private var recorder = VoiceRecorder()
+    @State private var voiceFilename: String?                    // attached voice note (what will be saved)
+    @State private var originalVoiceFilename: String?
+    @State private var audioSessionFiles: Set<String> = []       // audio files written this session
+    @State private var micDeniedAlert = false
+
     @State private var didSave = false
 
     private var canSave: Bool { Entry.cleanedInput(title: title, body: bodyText) != nil }
     private var canAddPhotos: Bool { photoFilenames.count < maxPhotos }
+    private var canRecord: Bool { voiceFilename == nil && recorder.phase == .idle }
 
     var body: some View {
         VStack(spacing: Spacing.md) {
-            // Date, title, body and photos scroll together; the toolbar + Save stay
-            // pinned below (and the keyboard pushes them up when typing).
+            // Date, title, body and media scroll together; the toolbar + the
+            // action bar stay pinned below (the keyboard pushes them up).
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.md) {
                     Text(date.journalHeading())
@@ -65,6 +73,10 @@ struct ComposerView: View {
                     if !photoFilenames.isEmpty {
                         photoRow.padding(.top, Spacing.lg)
                     }
+                    if let voiceFilename {
+                        VoiceNotePlayerBar(filename: voiceFilename, onRemove: removeVoice)
+                            .padding(.top, Spacing.lg)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.xl)
@@ -74,9 +86,7 @@ struct ComposerView: View {
             mediaToolbar
                 .padding(.horizontal, Spacing.xl)
 
-            AppButton(title: "Save your memory", action: save)
-                .opacity(canSave ? 1 : 0.45)
-                .disabled(!canSave)
+            actionBar
                 .padding(.horizontal, Spacing.xl)
                 .padding(.bottom, Spacing.md)
         }
@@ -105,26 +115,34 @@ struct ComposerView: View {
         } message: {
             Text("This device doesn't have a camera available.")
         }
+        .alert("Microphone Access Needed", isPresented: $micDeniedAlert) {
+            Button("Open Settings") { openSettings() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("To record a voice note, turn on microphone access for Memory Journal in Settings.")
+        }
         .onAppear {
             if let entry = existingEntry {
                 title = entry.title ?? ""
                 bodyText = entry.body
                 photoFilenames = entry.photoFilenames
                 originalPhotoFilenames = entry.photoFilenames
+                voiceFilename = entry.voiceNoteFilename
+                originalVoiceFilename = entry.voiceNoteFilename
             }
             #if DEBUG
             if CommandLine.arguments.contains("-focusBody") {
                 Task { @MainActor in bodyFocused = true }
             }
+            if CommandLine.arguments.contains("-voiceRecording") {
+                recorder.debugEnter(.recording)
+            }
+            if CommandLine.arguments.contains("-voiceReview") {
+                recorder.debugEnter(.reviewing, filename: "debug.m4a")
+            }
             #endif
         }
-        .onDisappear {
-            // If we left WITHOUT saving (swipe-to-dismiss), drop any files added
-            // this session — they were never committed to an entry.
-            if !didSave {
-                for filename in sessionFiles { MediaStore.deletePhoto(filename) }
-            }
-        }
+        .onDisappear(perform: cleanUpIfCancelled)
     }
 
     // MARK: - Title (single line, custom-coloured placeholder)
@@ -147,8 +165,6 @@ struct ComposerView: View {
     // MARK: - Body (multi-line, grows with content, custom placeholder)
 
     private var bodyField: some View {
-        // `axis: .vertical` makes the field grow downward as you type (no inner
-        // scroll), so it sits naturally above the photos inside the ScrollView.
         ZStack(alignment: .topLeading) {
             if bodyText.isEmpty {
                 Text("Write about something you want to remember....")
@@ -167,9 +183,6 @@ struct ComposerView: View {
     // MARK: - Photos
 
     private var photoRow: some View {
-        // Three equal slots so the thumbnails fit any screen width; filled slots
-        // show a thumbnail, empty slots are invisible spacers (keeps 1–2 photos
-        // left-aligned at the same size, matching the design).
         HStack(spacing: Spacing.md) {
             ForEach(0..<maxPhotos, id: \.self) { index in
                 if index < photoFilenames.count {
@@ -193,7 +206,7 @@ struct ComposerView: View {
             Spacer()
             toolbarIcon("camera", enabled: canAddPhotos) { tapCamera() }
             toolbarIcon("photo", enabled: canAddPhotos) { tapPhoto() }
-            toolbarIcon("mic", enabled: true) { /* TODO(Part D): record a voice note */ }
+            toolbarIcon("mic", enabled: canRecord) { tapMic() }
         }
     }
 
@@ -208,7 +221,29 @@ struct ComposerView: View {
         .opacity(enabled ? 1 : 0.35)
     }
 
-    // MARK: - Actions
+    // MARK: - Action bar (Save, or the recording / review bars)
+
+    @ViewBuilder
+    private var actionBar: some View {
+        switch recorder.phase {
+        case .idle:
+            AppButton(title: "Save your memory", action: save)
+                .opacity(canSave ? 1 : 0.45)
+                .disabled(!canSave)
+        case .recording:
+            RecordingBar(elapsed: recorder.elapsed, levels: recorder.liveLevels) {
+                recorder.stop()
+            }
+        case .reviewing:
+            if let take = recorder.recordedFilename {
+                ReviewBar(filename: take,
+                          onDiscard: { player.stop(); recorder.discard() },
+                          onConfirm: confirmVoice)
+            }
+        }
+    }
+
+    // MARK: - Photo actions
 
     private func tapPhoto() {
         if canAddPhotos { showPhotoPicker = true }
@@ -222,16 +257,11 @@ struct ComposerView: View {
         }
         Task { @MainActor in
             switch MediaPermissions.status(of: .camera) {
-            case .granted:
-                showCamera = true
+            case .granted: showCamera = true
             case .notDetermined:
-                if await MediaPermissions.request(.camera) == .granted {
-                    showCamera = true
-                } else {
-                    cameraDeniedAlert = true
-                }
-            case .denied:
-                cameraDeniedAlert = true
+                if await MediaPermissions.request(.camera) == .granted { showCamera = true }
+                else { cameraDeniedAlert = true }
+            case .denied: cameraDeniedAlert = true
             }
         }
     }
@@ -245,7 +275,7 @@ struct ComposerView: View {
                 sessionFiles.insert(filename)
             }
         }
-        pickerItems = []   // reset so the same photo can be re-picked later
+        pickerItems = []
     }
 
     private func addCaptured(_ image: UIImage) {
@@ -256,9 +286,40 @@ struct ComposerView: View {
     }
 
     private func removePhoto(_ filename: String) {
-        // Remove from the working list now; the file on disk is cleaned up on
-        // Save (or on cancel) so we never delete something still referenced.
-        photoFilenames.removeAll { $0 == filename }
+        photoFilenames.removeAll { $0 == filename }   // file cleaned up on save/cancel
+    }
+
+    // MARK: - Voice actions
+
+    private func tapMic() {
+        guard canRecord else { return }
+        Task { @MainActor in
+            switch MediaPermissions.status(of: .microphone) {
+            case .granted: startRecording()
+            case .notDetermined:
+                if await MediaPermissions.request(.microphone) == .granted { startRecording() }
+                else { micDeniedAlert = true }
+            case .denied: micDeniedAlert = true
+            }
+        }
+    }
+
+    private func startRecording() {
+        bodyFocused = false        // drop the keyboard so the recording bar is visible
+        try? recorder.start()
+    }
+
+    private func confirmVoice() {
+        player.stop()
+        if let filename = recorder.confirm() {
+            voiceFilename = filename
+            audioSessionFiles.insert(filename)
+        }
+    }
+
+    private func removeVoice() {
+        player.stop()
+        voiceFilename = nil        // file cleaned up on save/cancel
     }
 
     private func openSettings() {
@@ -267,34 +328,52 @@ struct ComposerView: View {
         }
     }
 
-    // MARK: - Save
+    // MARK: - Save / cleanup
 
     private func save() {
         guard let cleaned = Entry.cleanedInput(title: title, body: bodyText) else { return }
         let finalPhotos = photoFilenames
+        let finalVoice = voiceFilename
 
         if let entry = existingEntry {
             entry.title = cleaned.title
             entry.body = cleaned.body
             entry.photoFilenames = finalPhotos
+            entry.voiceNoteFilename = finalVoice
             entry.modifiedAt = .now
         } else {
             context.insert(Entry(date: date,
                                  title: cleaned.title,
                                  body: cleaned.body,
-                                 photoFilenames: finalPhotos))
+                                 photoFilenames: finalPhotos,
+                                 voiceNoteFilename: finalVoice))
         }
         try? context.save()
 
-        // Delete files no longer referenced: removed originals + added-then-removed.
-        for filename in MediaStore.orphanedPhotoFiles(original: originalPhotoFilenames,
-                                                      session: sessionFiles,
-                                                      final: finalPhotos) {
+        // Delete media no longer referenced by the saved entry.
+        for filename in MediaStore.orphanedFiles(original: originalPhotoFilenames,
+                                                 session: sessionFiles,
+                                                 final: finalPhotos) {
             MediaStore.deletePhoto(filename)
+        }
+        for filename in MediaStore.orphanedFiles(original: [originalVoiceFilename].compactMap { $0 },
+                                                 session: audioSessionFiles,
+                                                 final: [finalVoice].compactMap { $0 }) {
+            MediaStore.deleteAudio(filename)
         }
 
         didSave = true
-        dismiss()   // back to Home, which auto-updates via @Query
+        dismiss()
+    }
+
+    private func cleanUpIfCancelled() {
+        guard !didSave else { return }
+        // Left without saving: drop everything written this session, and abandon
+        // any in-progress / unconfirmed recording. Original files are untouched.
+        player.stop()
+        if recorder.phase != .idle { recorder.discard() }
+        for filename in sessionFiles { MediaStore.deletePhoto(filename) }
+        for filename in audioSessionFiles { MediaStore.deleteAudio(filename) }
     }
 }
 
@@ -307,7 +386,7 @@ private struct EditablePhotoThumbnail: View {
     var body: some View {
         RoundedRectangle(cornerRadius: 6)
             .fill(Color.appSecondary.opacity(0.2))
-            .aspectRatio(110.0 / 140.0, contentMode: .fit)   // matches the design's photo ratio
+            .aspectRatio(110.0 / 140.0, contentMode: .fit)
             .overlay {
                 if let image = MediaStore.loadPhoto(filename) {
                     Image(uiImage: image).resizable().scaledToFill()
@@ -325,7 +404,7 @@ private struct EditablePhotoThumbnail: View {
                             .foregroundStyle(.white)
                     }
                     .frame(width: 22, height: 22)
-                    .padding(6)   // larger hit area around the small ✕
+                    .padding(6)
                 }
                 .accessibilityLabel("Remove photo")
             }
@@ -335,4 +414,5 @@ private struct EditablePhotoThumbnail: View {
 #Preview {
     ComposerView(date: .now)
         .modelContainer(for: Entry.self, inMemory: true)
+        .environment(VoicePlayer())
 }

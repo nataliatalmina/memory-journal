@@ -47,8 +47,8 @@ struct EntryDetailView: View {
                     }
                 }
 
-                if entry.voiceNoteFilename != nil {
-                    VoiceNotePlayerBar()
+                if let voiceNote = entry.voiceNoteFilename {
+                    VoiceNotePlayerBar(filename: voiceNote)
                 }
             }
             .padding(Spacing.lg)

@@ -47,7 +47,8 @@ enum SampleData {
             date: today,
             title: "Day at the park",
             body: "Today I went to the park. It was so wonderful to just sit and read and feel the sunshine on my skin. Not rushing anywhere. I wish every day was like this.",
-            photoFilenames: ["sample-ocean.jpg", "sample-forest.jpg", "sample-sunset.jpg"]
+            photoFilenames: ["sample-ocean.jpg", "sample-forest.jpg", "sample-sunset.jpg"],
+            voiceNoteFilename: "sample-voice.m4a"
         ))
         try? context.save()
     }
@@ -101,6 +102,7 @@ enum SampleData {
         MediaStore.writeSampleImage(filename: "sample-forest.jpg",
                                     top: UIColor(red: 0.45, green: 0.62, blue: 0.46, alpha: 1),
                                     bottom: UIColor(red: 0.16, green: 0.34, blue: 0.30, alpha: 1))
+        MediaStore.writeSampleAudio(filename: "sample-voice.m4a")
     }
 }
 #endif

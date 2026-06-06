@@ -76,6 +76,20 @@ The single most important query in this app: **"give me all entries whose month/
 - **Typography — DONE:** PP Kyoto is registered and active. The full family lives in `DesignSystem/Fonts/`; `UIAppFonts` (in the project-root `Info.plist`) registers the two weights the design system uses — PostScript names **`PPKyoto-Medium`** and **`PPKyoto-MediumItalic`**. `.kyoto`/`.kyotoItalic` use `.custom(...)` with those names, and the tab bar uses `PPKyoto-MediumItalic` via `AppAppearance`. (The other weights are bundled and can be exposed by adding them to `UIAppFonts` + a helper.)
 - **DEBUG:** the dev tab (`Dev/DateLookupDevView.swift`) shows the chosen mode and a "Replay onboarding" button (resets `hasOnboarded`).
 
+### Phase 3 decisions (recorded)
+
+- **Home (`Features/Journal/JournalView.swift`):** empty vs. populated is data-driven via `@Query` (auto-updates on save) + the Phase 1 `targetDates`. Today's entry shows in the **header** with an **"Edit memory"** button; the look-back list is strictly past years/months.
+- **Composer (`ComposerView.swift`):** one screen for create + edit. **Save rule:** non-whitespace **body** required; title optional, both trimmed (`Entry.cleanedInput`, unit-tested). One entry per day (Create when none, Edit when one exists).
+- **Detail (`EntryDetailView.swift`):** tapping a past entry opens a **read-only** view (kept separate from the composer). Hierarchy is all PP Kyoto Medium: with a title → date grey 17 / title teal 24 / body grey 16; without a title → date teal 24 / body grey 16. Body is upright Medium (not forced italic) so the entry's own text shows faithfully.
+- **Entry titles** on Home rows use **PP Kyoto Bold** (registered) so they stand out from the italic body.
+- **Media storage (`Services/MediaStore.swift`):** photos/audio live in the app container (`Application Support/Media/{Photos,Audio}`); the entry stores only **filenames**, never bytes, never off-device. Saves are **orphan-safe** — files committed on Save, cleaned up on cancel (`orphanedFiles`, unit-tested).
+- **Photos (Part C):** max **3**, tap-**✕** to remove. Library via **`PhotosPicker`** (needs no permission — most privacy-preserving; the onboarding "Photo Library" toggle is effectively unused for attaching). Camera via a `UIImagePickerController` wrapper (`Shared/CameraPicker.swift`), gated on camera permission with a graceful Settings route; unavailable in the Simulator. Images are downscaled to ≤2048px JPEG.
+- **Voice (Part D):** **one** voice note per entry. `Services/VoiceRecorder.swift` records (record → review → keep/discard) to the container; `Services/VoicePlayer.swift` is a single shared player (injected via environment) so only one note plays at a time. **Waveform is hybrid:** the live recording meter is **real** (`AVAudioRecorder` metering → `Shared/LiveWaveformView.swift`); the saved-note waveform is **representative** (`Shared/WaveformView.swift`). **TODO (owner-requested, later):** persist ~40–50 captured levels alongside the note so the saved waveform can be true amplitude without decoding audio.
+- **Composer media icons:** 44×44pt tap targets placed adjacent (HIG minimum + Messages-style density).
+- **New colour flagged:** a destructive **red** for the recording "discard" (✕) button — the palette has no red; it's the conventional destructive colour. Confirm or tokenise.
+- **Still-open visual flags (unchanged):** body-excerpt uses Medium Italic vs the Figma's Regular Italic; the tab bar is the native iOS bar (lowercase) vs the Figma's tall custom bar; the Home book logo reuses the animated GIF (could be a still frame).
+- **DEBUG:** sample data seeds **relative to today** (so the look-back is always populated) with photo/voice/plain variety and a generated sample image + audio (playable). Launch args for previewing states: `-hasOnboarded`, `-seedTodayEntry`, `-openComposer`, `-openDetail`, `-clearEntriesOnLaunch`, `-focusBody`, `-voiceRecording`, `-voiceReview`. Dev tab has Reseed / Clear / Replay onboarding.
+
 ## Screens
 
 There are four main screens, reached via a bottom tab bar (Journal, Calendar, Prompts, Settings), plus onboarding.
@@ -132,7 +146,7 @@ When in doubt about a visual detail, ask to see the relevant Figma screen rather
 - [x] **Phase 0 — Scaffolding:** Xcode project, folder structure, design tokens (colors, fonts, spacing), this CLAUDE.md, app entry point, empty tab bar with four tabs.
 - [x] **Phase 1 — Data + the core query:** SwiftData model, seeded sample data, the "same date across N years/months" query, verified in a throwaway list view.
 - [x] **Phase 2 — Onboarding:** splash → view-mode selection → media permissions → privacy policy link.
-- [ ] **Phase 3 — Journal/Home screen** (empty state, create entry, past-entries list, media in entries).
+- [x] **Phase 3 — Journal/Home screen** (empty state, create entry, past-entries list, media in entries).
 - [ ] **Phase 4 — Prompts screen.**
 - [ ] **Phase 5 — Calendar screen.**
 - [ ] **Phase 6 — Settings screen** (incl. changing lookback window, permissions, privacy policy).

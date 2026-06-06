@@ -19,6 +19,7 @@
 
 import Foundation
 import UIKit
+import AVFoundation
 
 enum MediaStore {
     // MARK: - Locations
@@ -82,11 +83,17 @@ enum MediaStore {
         try? FileManager.default.removeItem(at: photoURL(filename))
     }
 
+    /// Delete an audio file. Safe to call if it doesn't exist.
+    static func deleteAudio(_ filename: String) {
+        try? FileManager.default.removeItem(at: audioURL(filename))
+    }
+
     /// After a composer save, which files should be deleted? Everything we had
     /// (`original`) or wrote this session (`session`) that the saved entry no
     /// longer references (`final`). Pure set math — kept separate so it can be
     /// unit-tested (orphaned media would quietly violate the privacy promise).
-    static func orphanedPhotoFiles(original: [String], session: Set<String>, final: [String]) -> Set<String> {
+    /// Used for both photos and the voice note.
+    static func orphanedFiles(original: [String], session: Set<String>, final: [String]) -> Set<String> {
         Set(original).union(session).subtracting(final)
     }
 
@@ -126,6 +133,35 @@ enum MediaStore {
         if let data = image.jpegData(compressionQuality: 0.85) {
             try? data.write(to: url)
         }
+    }
+
+    /// Synthesize a short decaying-tone m4a so seeded voice notes actually play.
+    /// DEBUG-only; real notes come from the recorder.
+    static func writeSampleAudio(filename: String, seconds: Double = 2.0) {
+        ensureDirectories()
+        let url = audioURL(filename)
+        guard !FileManager.default.fileExists(atPath: url.path) else { return }
+
+        let sampleRate = 44_100.0
+        let settings: [String: Any] = [
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: sampleRate,
+            AVNumberOfChannelsKey: 1,
+        ]
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1),
+              let file = try? AVAudioFile(forWriting: url, settings: settings),
+              let buffer = AVAudioPCMBuffer(pcmFormat: format,
+                                            frameCapacity: AVAudioFrameCount(sampleRate * seconds)) else { return }
+
+        let frames = Int(sampleRate * seconds)
+        buffer.frameLength = AVAudioFrameCount(frames)
+        if let channel = buffer.floatChannelData?[0] {
+            for i in 0..<frames {
+                let t = Double(i) / sampleRate
+                channel[i] = Float(sin(2 * .pi * 440 * t) * 0.2 * exp(-t * 1.2))
+            }
+        }
+        try? file.write(from: buffer)
     }
     #endif
 }
