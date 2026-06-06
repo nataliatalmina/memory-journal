@@ -35,6 +35,16 @@ struct MemoryJournalApp: App {
         // Put some sample entries in place (only when the store is empty) so the
         // dev view has something to show. Compiled out of release builds.
         SampleData.seedIfNeeded(container.mainContext)
+        // Testing affordance: launch with `-clearEntriesOnLaunch YES` to start
+        // with an empty store (used to preview the empty home state).
+        if CommandLine.arguments.contains("-clearEntriesOnLaunch") {
+            SampleData.clearAll(container.mainContext)
+        }
+        // Launch with `-seedTodayEntry YES` to also create today's entry (to preview
+        // the header "today's entry + Edit memory" state).
+        if CommandLine.arguments.contains("-seedTodayEntry") {
+            SampleData.seedTodayEntry(container.mainContext)
+        }
         #endif
     }
 

@@ -29,4 +29,10 @@ extension Font {
     static func kyotoItalic(size: CGFloat) -> Font {
         .custom("PPKyoto-MediumItalic", size: size)
     }
+
+    /// Bold serif — heavier than the Medium body, used to make entry titles stand
+    /// out from the body text. (PP Kyoto Bold; registered in Info.plist.)
+    static func kyotoBold(size: CGFloat) -> Font {
+        .custom("PPKyoto-Bold", size: size)
+    }
 }

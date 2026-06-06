@@ -69,8 +69,12 @@ struct DateLookupDevView: View {
                 }
 
                 Section {
-                    Button("Reseed sample data", role: .destructive) {
+                    Button("Reseed sample data") {
                         SampleData.reseed(context)
+                        runQuery()
+                    }
+                    Button("Clear all entries (empty state)", role: .destructive) {
+                        SampleData.clearAll(context)
                         runQuery()
                     }
                 }

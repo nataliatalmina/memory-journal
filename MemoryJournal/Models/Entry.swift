@@ -78,3 +78,18 @@ final class Entry {
         self.modifiedAt = createdAt
     }
 }
+
+extension Entry {
+    /// Apply the composer's "enough to save" rules to raw field text:
+    ///  - trims leading/trailing whitespace and newlines,
+    ///  - an all-whitespace title becomes `nil` (title is optional),
+    ///  - returns `nil` when the body has no real text — an empty entry can't be
+    ///    saved (title alone is not enough).
+    /// Returning `nil` is the single source of truth for "can't save".
+    static func cleanedInput(title: String, body: String) -> (title: String?, body: String)? {
+        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedBody.isEmpty else { return nil }
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (trimmedTitle.isEmpty ? nil : trimmedTitle, trimmedBody)
+    }
+}
