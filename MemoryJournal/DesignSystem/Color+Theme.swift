@@ -24,6 +24,11 @@ extension Color {
 
     /// Warm grey `#525252` — body text throughout the app, including journal entries.
     static let appBodyText = Color(hex: 0x525252)
+
+    /// Muted red `#CC4D4A` — destructive actions only (e.g. discard a recording).
+    /// The editorial palette has no red; this is the conventional destructive
+    /// colour, kept deliberately muted to fit the aesthetic.
+    static let appDestructive = Color(hex: 0xCC4D4A)
 }
 
 extension Color {

@@ -54,10 +54,6 @@ struct ReviewBar: View {
     @Environment(VoicePlayer.self) private var player
     private var isPlaying: Bool { player.isPlaying(filename) }
 
-    /// Destructive red for "discard". (The palette has no red; this is the
-    /// conventional destructive colour — flagged for the owner.)
-    private static let discardRed = Color(red: 0.80, green: 0.30, blue: 0.29)
-
     var body: some View {
         HStack(spacing: Spacing.md) {
             Button(action: onDiscard) {
@@ -65,7 +61,7 @@ struct ReviewBar: View {
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 56, height: 56)
-                    .background(Self.discardRed)
+                    .background(Color.appDestructive)
                     .clipShape(.rect(cornerRadius: CornerRadius.button))
             }
             .accessibilityLabel("Discard recording")

@@ -86,7 +86,7 @@ The single most important query in this app: **"give me all entries whose month/
 - **Photos (Part C):** max **3**, tap-**✕** to remove. Library via **`PhotosPicker`** (needs no permission — most privacy-preserving; the onboarding "Photo Library" toggle is effectively unused for attaching). Camera via a `UIImagePickerController` wrapper (`Shared/CameraPicker.swift`), gated on camera permission with a graceful Settings route; unavailable in the Simulator. Images are downscaled to ≤2048px JPEG.
 - **Voice (Part D):** **one** voice note per entry. `Services/VoiceRecorder.swift` records (record → review → keep/discard) to the container; `Services/VoicePlayer.swift` is a single shared player (injected via environment) so only one note plays at a time. **Waveform is hybrid:** the live recording meter is **real** (`AVAudioRecorder` metering → `Shared/LiveWaveformView.swift`); the saved-note waveform is **representative** (`Shared/WaveformView.swift`). **TODO (owner-requested, later):** persist ~40–50 captured levels alongside the note so the saved waveform can be true amplitude without decoding audio.
 - **Composer media icons:** 44×44pt tap targets placed adjacent (HIG minimum + Messages-style density).
-- **New colour flagged:** a destructive **red** for the recording "discard" (✕) button — the palette has no red; it's the conventional destructive colour. Confirm or tokenise.
+- **Destructive red (confirmed + tokenised):** `Color.appDestructive` (`#CC4D4A`), used for the recording "discard" (✕) button. Owner-approved; now part of the palette.
 - **Still-open visual flags (unchanged):** body-excerpt uses Medium Italic vs the Figma's Regular Italic; the tab bar is the native iOS bar (lowercase) vs the Figma's tall custom bar; the Home book logo reuses the animated GIF (could be a still frame).
 - **DEBUG:** sample data seeds **relative to today** (so the look-back is always populated) with photo/voice/plain variety and a generated sample image + audio (playable). Launch args for previewing states: `-hasOnboarded`, `-seedTodayEntry`, `-openComposer`, `-openDetail`, `-clearEntriesOnLaunch`, `-focusBody`, `-voiceRecording`, `-voiceReview`. Dev tab has Reseed / Clear / Replay onboarding.
 
@@ -112,6 +112,7 @@ The Figma designs commit to a calm, editorial, serif-forward aesthetic. Match it
 - App background: `#ECEFF5` — pale blue-grey, used on almost every screen.
 - Card / surface: `#FBFCFD` — calendar card; journal entry card; tab bar; etc.
 - Body text: `#525252` — a warm grey; used for all text within the app, including journal entries.
+- Destructive / muted red: `#CC4D4A` — destructive actions only (e.g. discard a recording). Added Phase 3 (the editorial palette has no red); kept muted to fit. Token: `Color.appDestructive`.
 - Define these as named colors in the asset catalog or a `Color` extension; never scatter raw hex in views.
 
 **Typography** — this is the signature of the app:
