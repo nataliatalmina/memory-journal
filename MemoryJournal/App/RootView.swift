@@ -37,4 +37,5 @@ struct RootView: View {
 #Preview {
     RootView()
         .modelContainer(for: Entry.self, inMemory: true)
+        .environment(AppRouter())
 }

@@ -90,6 +90,19 @@ The single most important query in this app: **"give me all entries whose month/
 - **Still-open visual flags (unchanged):** body-excerpt uses Medium Italic vs the Figma's Regular Italic; the tab bar is the native iOS bar (lowercase) vs the Figma's tall custom bar; the Home book logo reuses the animated GIF (could be a still frame).
 - **DEBUG:** sample data seeds **relative to today** (so the look-back is always populated) with photo/voice/plain variety and a generated sample image + audio (playable). Launch args for previewing states: `-hasOnboarded`, `-seedTodayEntry`, `-openComposer`, `-openDetail`, `-clearEntriesOnLaunch`, `-focusBody`, `-voiceRecording`, `-voiceReview`. Dev tab has Reseed / Clear / Replay onboarding.
 
+### Phase 4 decisions (recorded)
+
+- **Prompts screen (`Features/Prompts/PromptsView.swift`):** title, intro, five date-seeded cards, and a "Get started with prompt" button that appears (animated) only when a card is selected.
+- **Master list (`PromptLibrary.all`):** an in-code static `[String]` (~55 starter prompts) — NOT SwiftData. Prompts are static, read-only, identical for all users, so they belong in code (or a bundled JSON later), not the user's store. Replace/extend the starter wording freely.
+- **Daily rotation (`DailyPrompts.selection`):** derive a `dayNumber` from the **local** calendar day (start-of-day; flips at local midnight, same basis as `Entry.date`), seed a SplitMix64 `SeededGenerator`, shuffle the indices, take 5. Stable all day, fresh next day, 5 distinct (no within-day repeats), and the mixer avalanches so consecutive days don't form an obvious cycle. Guards a short/empty list (`min(count, list.count)`). Pure + unit-tested.
+- **Selection:** single. Tapping the selected card again **deselects** it (toggle). Cards are real selectable buttons — an unselected card is **sage** (`appSecondary`), NOT a disabled control; selected is teal (`appPrimary`). VoiceOver gets `.isSelected`.
+- **Composer reuse:** `ComposerView` gained a `prompt:` parameter — it seeds the **title** (only if the title is empty, so editing never clobbers) and records `promptUsed`. The title field is now **multi-line** so long prompt-titles wrap (also better for long manual titles).
+- **Today-only / one entry per day:** a prompt always targets **today** (`date = real today`, never a past date). If today's entry **already exists**, the Prompts screen does NOT offer a second prompt — it shows an "already written today / one a day, fresh prompts tomorrow" message + a **"View today's memory"** button (→ Home). New entries only when there's none yet.
+- **After saving a prompted entry → jump to Home** so the new memory is visible. Done via `ComposerView`'s `onSaved` callback + the sheet's `onDismiss` (only on a real save, not a swipe-cancel), which sets `AppRouter.selectedTab = .journal`.
+- **Card style + contrast (resolved):** unselected prompt cards use a pale teal fill (`appPrimary` @10%) + **teal text** — high-contrast AND clearly distinct from the solid-teal selected/CTA. (We tried darkening `appSecondary` to `#4A737C` for contrast, but it read too close to the primary teal, so `appSecondary` stays the original `#5D909B` and the cards use this treatment instead.) Selected card stays solid teal + white.
+- **Tab navigation:** `App/AppRouter.swift` (`@Observable`, injected in the environment) owns the selected `AppTab`; `RootTabView` binds the `TabView` to it. Enables cross-tab navigation (and the DEBUG `-startTab`).
+- **DEBUG:** on-screen day simulator (−1 / Today / +1) on the Prompts screen to verify rotation without waiting; launch args `-startTab <journal|calendar|prompts|settings|dev>`, `-selectFirstPrompt`, `-openPromptComposer`.
+
 ## Screens
 
 There are four main screens, reached via a bottom tab bar (Journal, Calendar, Prompts, Settings), plus onboarding.
@@ -108,7 +121,7 @@ The Figma designs commit to a calm, editorial, serif-forward aesthetic. Match it
 **Colour palette:**
 
 - Primary / deep teal: `#005363` — primary buttons, headings, active tab, selected calendar day.
-- Secondary / muted sage-teal: `#5D909B` — secondary/disabled-style buttons (e.g. "Enable Photo Library").
+- Secondary / muted sage-teal: `#5D909B` — secondary surfaces (onboarding "Enable" buttons, unselected view-mode card). (NB: the **prompt cards** do NOT use this — see Phase 4 decisions; they use a "bordered" pale-teal-fill + teal-text treatment for contrast.)
 - App background: `#ECEFF5` — pale blue-grey, used on almost every screen.
 - Card / surface: `#FBFCFD` — calendar card; journal entry card; tab bar; etc.
 - Body text: `#525252` — a warm grey; used for all text within the app, including journal entries.
@@ -148,7 +161,7 @@ When in doubt about a visual detail, ask to see the relevant Figma screen rather
 - [x] **Phase 1 — Data + the core query:** SwiftData model, seeded sample data, the "same date across N years/months" query, verified in a throwaway list view.
 - [x] **Phase 2 — Onboarding:** splash → view-mode selection → media permissions → privacy policy link.
 - [x] **Phase 3 — Journal/Home screen** (empty state, create entry, past-entries list, media in entries).
-- [ ] **Phase 4 — Prompts screen.**
+- [x] **Phase 4 — Prompts screen.**
 - [ ] **Phase 5 — Calendar screen.**
 - [ ] **Phase 6 — Settings screen** (incl. changing lookback window, permissions, privacy policy).
 

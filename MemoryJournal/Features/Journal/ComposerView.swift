@@ -28,9 +28,16 @@ struct ComposerView: View {
 
     let date: Date
     var existingEntry: Entry?
+    /// When opened from the Prompts screen, the chosen prompt to seed the title.
+    var prompt: String?
+    /// Called after a successful save (before dismiss). Lets the caller react —
+    /// e.g. the Prompts screen jumps to Home so the new entry is visible.
+    var onSaved: (() -> Void)?
 
     @State private var title: String = ""
     @State private var bodyText: String = ""
+    @State private var appliedPrompt: String?   // the prompt that actually seeded this entry
+
     @FocusState private var bodyFocused: Bool
 
     // Photos
@@ -130,6 +137,12 @@ struct ComposerView: View {
                 voiceFilename = entry.voiceNoteFilename
                 originalVoiceFilename = entry.voiceNoteFilename
             }
+            // Seed the title from a prompt, but only if there isn't a title already
+            // (never clobber what the user wrote when editing today's entry).
+            if let prompt, title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                title = prompt
+                appliedPrompt = prompt
+            }
             #if DEBUG
             if CommandLine.arguments.contains("-focusBody") {
                 Task { @MainActor in bodyFocused = true }
@@ -148,11 +161,14 @@ struct ComposerView: View {
     // MARK: - Title (single line, custom-coloured placeholder)
 
     private var titleField: some View {
-        TextField("", text: $title)
+        // `axis: .vertical` lets the title wrap to multiple lines — needed for
+        // long prompt-titles (e.g. a full question), and better for long manual
+        // titles too. Short titles still render on one line.
+        TextField("", text: $title, axis: .vertical)
             .font(.kyoto(size: 32))
             .foregroundStyle(Color.appPrimary)
             .tint(Color.appPrimary)
-            .overlay(alignment: .leading) {
+            .overlay(alignment: .topLeading) {
                 if title.isEmpty {
                     Text("Title your entry")
                         .font(.kyoto(size: 32))
@@ -340,13 +356,15 @@ struct ComposerView: View {
             entry.body = cleaned.body
             entry.photoFilenames = finalPhotos
             entry.voiceNoteFilename = finalVoice
+            if let appliedPrompt { entry.promptUsed = appliedPrompt }
             entry.modifiedAt = .now
         } else {
             context.insert(Entry(date: date,
                                  title: cleaned.title,
                                  body: cleaned.body,
                                  photoFilenames: finalPhotos,
-                                 voiceNoteFilename: finalVoice))
+                                 voiceNoteFilename: finalVoice,
+                                 promptUsed: appliedPrompt))
         }
         try? context.save()
 
@@ -363,6 +381,7 @@ struct ComposerView: View {
         }
 
         didSave = true
+        onSaved?()
         dismiss()
     }
 

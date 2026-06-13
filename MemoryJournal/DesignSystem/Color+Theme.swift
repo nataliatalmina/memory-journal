@@ -13,7 +13,9 @@ extension Color {
     /// Deep teal `#005363` — primary buttons, headings, active tab, selected calendar day.
     static let appPrimary = Color(hex: 0x005363)
 
-    /// Muted sage-teal `#5D909B` — secondary / disabled-style buttons (e.g. "Enable Photo Library").
+    /// Muted sage-teal `#5D909B` — secondary surfaces (onboarding "Enable"
+    /// buttons, the unselected view-mode card). Note: prompt cards use a separate
+    /// "bordered" treatment (pale teal fill + teal text) instead, for contrast.
     static let appSecondary = Color(hex: 0x5D909B)
 
     /// Pale blue-grey `#ECEFF5` — the app background, used on almost every screen.

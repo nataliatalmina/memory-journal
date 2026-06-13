@@ -17,6 +17,7 @@ enum Spacing {
     static let lg: CGFloat = 24
     static let xl: CGFloat = 32
     static let xxl: CGFloat = 48
+    static let xxxl: CGFloat = 64
 }
 
 /// Corner-radius scale, kept small on purpose so buttons and cards feel related.

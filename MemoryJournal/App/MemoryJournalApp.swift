@@ -22,6 +22,9 @@ struct MemoryJournalApp: App {
     // one note can play at a time.
     @State private var voicePlayer = VoicePlayer()
 
+    // Owns the selected bottom tab, so screens can switch tabs.
+    @State private var router = AppRouter()
+
     init() {
         AppAppearance.configure()
 
@@ -62,5 +65,6 @@ struct MemoryJournalApp: App {
         // `@Environment(\.modelContext)` or `@Query`.
         .modelContainer(container)
         .environment(voicePlayer)
+        .environment(router)
     }
 }
