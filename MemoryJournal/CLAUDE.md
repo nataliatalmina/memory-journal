@@ -95,12 +95,14 @@ The single most important query in this app: **"give me all entries whose month/
 - **Prompts screen (`Features/Prompts/PromptsView.swift`):** title, intro, five date-seeded cards, and a "Get started with prompt" button that appears (animated) only when a card is selected.
 - **Master list (`PromptLibrary.all`):** an in-code static `[String]` (~55 starter prompts) — NOT SwiftData. Prompts are static, read-only, identical for all users, so they belong in code (or a bundled JSON later), not the user's store. Replace/extend the starter wording freely.
 - **Daily rotation (`DailyPrompts.selection`):** derive a `dayNumber` from the **local** calendar day (start-of-day; flips at local midnight, same basis as `Entry.date`), seed a SplitMix64 `SeededGenerator`, shuffle the indices, take 5. Stable all day, fresh next day, 5 distinct (no within-day repeats), and the mixer avalanches so consecutive days don't form an obvious cycle. Guards a short/empty list (`min(count, list.count)`). Pure + unit-tested.
-- **Selection:** single. Tapping the selected card again **deselects** it (toggle). Cards are real selectable buttons — an unselected card is **sage** (`appSecondary`), NOT a disabled control; selected is teal (`appPrimary`). VoiceOver gets `.isSelected`.
+- **Selection:** single. Tapping the selected card again **deselects** it (toggle). Cards are real selectable buttons (NOT disabled controls) — unselected uses the pale-teal treatment below; selected is solid teal + white. VoiceOver gets `.isSelected`.
 - **Composer reuse:** `ComposerView` gained a `prompt:` parameter — it seeds the **title** (only if the title is empty, so editing never clobbers) and records `promptUsed`. The title field is now **multi-line** so long prompt-titles wrap (also better for long manual titles).
 - **Today-only / one entry per day:** a prompt always targets **today** (`date = real today`, never a past date). If today's entry **already exists**, the Prompts screen does NOT offer a second prompt — it shows an "already written today / one a day, fresh prompts tomorrow" message + a **"View today's memory"** button (→ Home). New entries only when there's none yet.
 - **After saving a prompted entry → jump to Home** so the new memory is visible. Done via `ComposerView`'s `onSaved` callback + the sheet's `onDismiss` (only on a real save, not a swipe-cancel), which sets `AppRouter.selectedTab = .journal`.
 - **Card style + contrast (resolved):** unselected prompt cards use a pale teal fill (`appPrimary` @10%) + **teal text** — high-contrast AND clearly distinct from the solid-teal selected/CTA. (We tried darkening `appSecondary` to `#4A737C` for contrast, but it read too close to the primary teal, so `appSecondary` stays the original `#5D909B` and the cards use this treatment instead.) Selected card stays solid teal + white.
 - **Tab navigation:** `App/AppRouter.swift` (`@Observable`, injected in the environment) owns the selected `AppTab`; `RootTabView` binds the `TabView` to it. Enables cross-tab navigation (and the DEBUG `-startTab`).
+- **Title position:** the "journalling prompts" title (and the block under it) sits `Spacing.xxxl` (64pt, new step in the scale) below the safe area — ≈ the Figma's Y≈127, but as a fixed offset from the status bar so it adapts across device sizes rather than a hard-coded Y.
+- **Open accessibility flag:** onboarding's sage "Enable" buttons (white on `#5D909B`) are ≈3.5:1 contrast, below WCAG AA — kept as the original design (we reverted the darker sage because it read too close to the primary teal). Revisit separately if wanted.
 - **DEBUG:** on-screen day simulator (−1 / Today / +1) on the Prompts screen to verify rotation without waiting; launch args `-startTab <journal|calendar|prompts|settings|dev>`, `-selectFirstPrompt`, `-openPromptComposer`.
 
 ## Screens
@@ -121,7 +123,7 @@ The Figma designs commit to a calm, editorial, serif-forward aesthetic. Match it
 **Colour palette:**
 
 - Primary / deep teal: `#005363` — primary buttons, headings, active tab, selected calendar day.
-- Secondary / muted sage-teal: `#5D909B` — secondary surfaces (onboarding "Enable" buttons, unselected view-mode card). (NB: the **prompt cards** do NOT use this — see Phase 4 decisions; they use a "bordered" pale-teal-fill + teal-text treatment for contrast.)
+- Secondary / muted sage-teal: `#5D909B` — secondary surfaces (onboarding "Enable" buttons, unselected view-mode card). (NB: the **prompt cards** do NOT use this — see Phase 4 decisions; they use a pale-teal-fill + teal-text treatment for contrast.)
 - App background: `#ECEFF5` — pale blue-grey, used on almost every screen.
 - Card / surface: `#FBFCFD` — calendar card; journal entry card; tab bar; etc.
 - Body text: `#525252` — a warm grey; used for all text within the app, including journal entries.
