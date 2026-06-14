@@ -30,4 +30,6 @@ enum CornerRadius {
     /// Onboarding selection cards (Figma: 12). The large floating cards on the
     /// calendar/journal screens may differ — revisit when we build Phase 5.
     static let card: CGFloat = 12
+    /// The large white calendar card floating on the pale background (Figma ≈ 20).
+    static let largeCard: CGFloat = 20
 }

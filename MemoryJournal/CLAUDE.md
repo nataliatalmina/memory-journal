@@ -105,6 +105,20 @@ The single most important query in this app: **"give me all entries whose month/
 - **Open accessibility flag:** onboarding's sage "Enable" buttons (white on `#5D909B`) are ≈3.5:1 contrast, below WCAG AA — kept as the original design (we reverted the darker sage because it read too close to the primary teal). Revisit separately if wanted.
 - **DEBUG:** on-screen day simulator (−1 / Today / +1) on the Prompts screen to verify rotation without waiting; launch args `-startTab <journal|calendar|prompts|settings|dev>`, `-selectFirstPrompt`, `-openPromptComposer`.
 
+### Phase 5 decisions (recorded)
+
+- **Calendar (`Features/Calendar/CalendarView.swift`):** pure single-date look-up and **read-only**. It never opens the composer, creates, or edits. Tapping a day with an entry renders it via **`EntryReadContent`** — extracted from `EntryDetailView` so the entry presentation is **identical** to Home's detail view and exposes no editing controls.
+- **Grid maths (`Features/Calendar/CalendarMonth.swift`):** pure, no SwiftUI/DB (mirrors how `DateLookup` isolates date math); unit-tested in `CalendarMonthTests`. Leading blanks = `(weekdayOfFirst − firstWeekday + 7) % 7`; the weekday header is `calendar.shortWeekdaySymbols` rotated by `firstWeekday` — **derived from `Calendar`, never hardcoded**. This fixes the mockup's garbled "SUN MON WED … SUN" header and adapts to locale (verified Monday-first in the sim).
+- **Time zone:** the grid and selection use `Calendar.current` (local), the **same** basis as `Entry.date`'s Phase 1 start-of-day normalisation, so a tapped grid day compares exactly to a stored entry's date.
+- **Forward navigation — CAPPED at the current month** (owner-decided): the next chevron is disabled + dimmed once you reach this month (future dates can't have entries); backward is unlimited. Changing month clears the selection.
+- **Default selection — NONE** (owner-decided, matches the mockup): on open nothing is selected, today is plain text (no special "today" marker), and a gentle hint ("Select a date to see your memory for that day.") sits below the card until a day is tapped. A selected day is a filled teal circle (`appPrimary` `#005363`) + white text. (The hint is a small addition beyond the blank mockup.)
+- **Entry dots — ADDED** (owner-approved): a small teal dot under days that have an entry; hidden when that day is selected (the fill is the indicator) and always laid out at opacity 0 so rows don't shift. Live via `@Query`.
+- **One entry per date:** the model only makes `id` unique, **not** `date` — multiple-per-date is technically possible in the store, but the Phase 3 composer flow guarantees one per day and there's no other create path, so Calendar queries the single entry (newest-first, defensively). No multi-entry list UI was built (the case can't occur via the app).
+- **Tokens added:** `CornerRadius.largeCard` (20 — the floating calendar card) and `Date.monthYearHeading()` ("August 2026", title-case, unlike the lowercase `journalHeading()`).
+- **Deviations from the calendar mockup (owner-confirmed):** reusing the Phase 3 entry view means (a) the date heading stays **grey when the entry has a title** (the calendar mockup showed it teal), and (b) photos render **full-width stacked** (the mockup showed a 3-thumbnail row). Owner **confirmed** keeping both as Phase 3 for cross-screen consistency with Home (rather than matching the calendar-specific mockup). Also: the Figma calendar is Apple's **stock graphical date-picker** in a card — we built a custom grid instead (per the brief) for the serif type, exact teal, entry dots, and read-only selection.
+- **Accessibility:** each day cell is a button with `accessibilityLabel` = full date, value = "Has an entry"/"No entry", `.isSelected` trait; the weekday header is hidden from VoiceOver (cells already announce dates); chevrons are labelled "Previous/Next month"; day numbers use `minimumScaleFactor` for large Dynamic Type.
+- **DEBUG:** launch args `-startTab calendar` (existing), `-calendarSelectEntry` (jump to the newest entry's month and select it), `-calendarSelectToday` (select today → shows the empty-date state with the default seed).
+
 ## Screens
 
 There are four main screens, reached via a bottom tab bar (Journal, Calendar, Prompts, Settings), plus onboarding.
@@ -164,7 +178,7 @@ When in doubt about a visual detail, ask to see the relevant Figma screen rather
 - [x] **Phase 2 — Onboarding:** splash → view-mode selection → media permissions → privacy policy link.
 - [x] **Phase 3 — Journal/Home screen** (empty state, create entry, past-entries list, media in entries).
 - [x] **Phase 4 — Prompts screen.**
-- [ ] **Phase 5 — Calendar screen.**
+- [x] **Phase 5 — Calendar screen.**
 - [ ] **Phase 6 — Settings screen** (incl. changing lookback window, permissions, privacy policy).
 
 Work top to bottom. Don't start a phase before the ones it depends on are done.

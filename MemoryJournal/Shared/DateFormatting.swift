@@ -25,4 +25,18 @@ extension Date {
         formatter.setLocalizedDateFormatFromTemplate("d MMMM yyyy")
         return formatter
     }()
+
+    /// "August 2026" — full month name + year, for the calendar's month header.
+    /// NOTE: deliberately NOT lowercased — the calendar header in the design uses
+    /// title case (e.g. "August 2026"), unlike the lowercase entry heading above.
+    func monthYearHeading() -> String {
+        Self.monthYearFormatter.string(from: self)
+    }
+
+    private static let monthYearFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
+        return formatter
+    }()
 }
