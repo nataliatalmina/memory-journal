@@ -2,11 +2,18 @@
 //  RootTabView.swift
 //  MemoryJournal
 //
-//  The app's root screen: a bottom tab bar with the four main sections,
-//  in the order from the designs — journal, calendar, prompts, settings.
+//  The app's root screen: the four main sections above a CUSTOM bottom tab bar
+//  (`MemoryTabBar`), in the order from the designs — Journal, Calendar, Prompts,
+//  Settings.
 //
-//  Phase 0 uses placeholder content in each tab. The real screens arrive in
-//  later phases; this file shouldn't need to change much when they do.
+//  We don't use SwiftUI's `TabView`: its native bar can't express the bespoke
+//  hand-drawn icons + italic-serif labels of the design. Instead we keep all four
+//  screens alive in a `ZStack` (so each tab preserves its own state — scroll
+//  position, the Calendar's selected day, a pushed Journal detail — exactly like a
+//  real tab bar) and show only the selected one. The custom bar is attached with
+//  `.safeAreaInset(edge: .bottom)`, the idiomatic way to add a bottom bar: it
+//  reserves space so each screen's content insets correctly above the bar across
+//  all device sizes.
 //
 
 import SwiftUI
@@ -26,37 +33,49 @@ struct RootTabView: View {
     var body: some View {
         @Bindable var router = router   // makes `$router.selectedTab` a binding
 
-        // `TabView` with the modern `Tab` API (iOS 18+): each `Tab` takes a
-        // label, an SF Symbol for its icon, a `value` for selection, and the view
-        // shown when selected. Labels are lowercase to match the editorial style;
-        // icons are outline ("line-art") SF Symbols, stand-ins for custom icons.
-        return TabView(selection: $router.selectedTab) {
-            Tab("journal", systemImage: "book", value: AppTab.journal) {
-                JournalView()
-            }
-            Tab("calendar", systemImage: "calendar", value: AppTab.calendar) {
-                CalendarView()
-            }
-            Tab("prompts", systemImage: "text.bubble", value: AppTab.prompts) {
-                PromptsView()
-            }
-            Tab("settings", systemImage: "gearshape", value: AppTab.settings) {
-                SettingsView()
-            }
-
-            // DEBUG-only tab for verifying the data layer (Phase 1). It is
-            // compiled out of release builds, so users never see it.
+        ZStack {
+            screen(.journal)
+            screen(.calendar)
+            screen(.prompts)
+            screen(.settings)
             #if DEBUG
-            Tab("dev", systemImage: "ladybug", value: AppTab.dev) {
-                DateLookupDevView()
-            }
+            screen(.dev)
             #endif
         }
-        .tint(.appPrimary)   // deep teal for the active tab's icon + label
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            MemoryTabBar(selection: $router.selectedTab)
+        }
+        .tint(.appPrimary)   // global accent for any default-tinted controls
+    }
+
+    /// One tab's screen, shown only when selected. Kept in the hierarchy when
+    /// hidden (opacity 0) so its `@State` survives tab switches; `allowsHitTesting`
+    /// and `accessibilityHidden` keep the hidden screens out of touch and VoiceOver.
+    @ViewBuilder
+    private func screen(_ tab: AppTab) -> some View {
+        let isSelected = router.selectedTab == tab
+        content(tab)
+            .opacity(isSelected ? 1 : 0)
+            .allowsHitTesting(isSelected)
+            .accessibilityHidden(!isSelected)
+    }
+
+    @ViewBuilder
+    private func content(_ tab: AppTab) -> some View {
+        switch tab {
+        case .journal:  JournalView()
+        case .calendar: CalendarView()
+        case .prompts:  PromptsView()
+        case .settings: SettingsView()
+        #if DEBUG
+        case .dev:      DateLookupDevView()
+        #endif
+        }
     }
 }
 
 #Preview {
     RootTabView()
         .environment(AppRouter())
+        .environment(AppLock())
 }

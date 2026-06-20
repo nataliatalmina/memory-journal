@@ -29,9 +29,9 @@ struct SplashView: View {
 
             VStack(spacing: Spacing.lg) {
                 Text("memory journal")
-                    // Wordmark. Figma uses a slightly greener teal (#005d4f) here;
-                    // we use the palette's `appPrimary` (#005363) to avoid adding a
-                    // near-duplicate colour — flagged for you to confirm.
+                    // Wordmark. The Figma's slightly greener teal (#005d4f) was a
+                    // mistake; we use the palette's single `appPrimary` (#005363).
+                    // (Owner-confirmed — keep one teal everywhere for consistency.)
                     .font(.kyoto(size: 44))
                     .foregroundStyle(Color.appPrimary)
                     .opacity(showWordmark ? 1 : 0)

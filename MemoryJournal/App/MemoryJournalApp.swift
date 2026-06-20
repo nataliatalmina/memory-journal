@@ -30,8 +30,6 @@ struct MemoryJournalApp: App {
     @State private var appLock = AppLock()
 
     init() {
-        AppAppearance.configure()
-
         do {
             // `for: Entry.self` lists the model types to persist. With no other
             // options it uses a local, on-device store — exactly the privacy

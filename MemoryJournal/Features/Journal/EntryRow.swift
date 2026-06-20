@@ -66,9 +66,9 @@ struct EntryContent: View {
         }
     }
 
-    /// Italic, truncated body excerpt. The design uses PP Kyoto *Regular* Italic;
-    /// we use our registered Medium Italic (`.kyotoItalic`) — very close. (Flagged
-    /// for the owner; we can register the Regular weight if the lighter look is wanted.)
+    /// Italic, truncated body excerpt in PP Kyoto Medium Italic (`.kyotoItalic`).
+    /// The Figma uses Regular Italic; Medium Italic is very close and owner-confirmed
+    /// to keep (no need to register the lighter Regular weight).
     private func excerpt(lineLimit: Int) -> some View {
         Text(entry.body)
             .font(.kyotoItalic(size: 16))

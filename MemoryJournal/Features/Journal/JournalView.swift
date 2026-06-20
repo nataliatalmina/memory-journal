@@ -144,10 +144,15 @@ private struct HomeHeader: View {
 
     var body: some View {
         VStack(spacing: Spacing.sm) {
-            // Reuse the splash book asset. NOTE: it animates here too (it's a GIF).
-            // If a still book reads calmer on a screen you revisit often, say so.
-            GIFImage(resourceName: "Loading")
-                .frame(width: 92, height: 64)
+            // The custom hand-drawn book logo (static), from the asset catalog.
+            // `.resizable().scaledToFit()` lets it scale to our width while keeping
+            // its real aspect ratio; `accessibilityHidden` because the "memory
+            // journal" wordmark right below already conveys it to VoiceOver.
+            Image("Home")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 92)
+                .accessibilityHidden(true)
 
             Text("memory journal")
                 .font(.kyoto(size: 32))
@@ -187,8 +192,11 @@ private struct EmptyHomeView: View {
         VStack(spacing: Spacing.lg) {
             Spacer()
 
-            GIFImage(resourceName: "Loading")
-                .frame(width: 110, height: 78)
+            Image("Home")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 110)
+                .accessibilityHidden(true)
 
             VStack(spacing: Spacing.xs) {
                 Text("memory journal")

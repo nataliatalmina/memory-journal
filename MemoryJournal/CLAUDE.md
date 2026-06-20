@@ -73,7 +73,7 @@ The single most important query in this app: **"give me all entries whose month/
   - *One teal only:* use `appPrimary` (`#005363`) for the wordmark and chips. The Figma's slightly greener `#005d4f` was a mistake (confirmed) — do not add it.
   - *Dynamic chips:* approved — the period chips are computed from "now" so they stay accurate.
   - *Splash:* the tagline fades in line by line — "Our memories make us human" first, then "Don't let them fade away".
-- **Typography — DONE:** PP Kyoto is registered and active. The full family lives in `DesignSystem/Fonts/`; `UIAppFonts` (in the project-root `Info.plist`) registers the two weights the design system uses — PostScript names **`PPKyoto-Medium`** and **`PPKyoto-MediumItalic`**. `.kyoto`/`.kyotoItalic` use `.custom(...)` with those names, and the tab bar uses `PPKyoto-MediumItalic` via `AppAppearance`. (The other weights are bundled and can be exposed by adding them to `UIAppFonts` + a helper.)
+- **Typography — DONE:** PP Kyoto is registered and active. The full family lives in `DesignSystem/Fonts/`; `UIAppFonts` (in the project-root `Info.plist`) registers the two weights the design system uses — PostScript names **`PPKyoto-Medium`** and **`PPKyoto-MediumItalic`**. `.kyoto`/`.kyotoItalic` use `.custom(...)` with those names. (The custom tab bar's italic labels use `.kyotoItalic` directly — see the post-v1 tab-bar note; the old `AppAppearance` UIKit styling was removed when the native bar was replaced.) (The other weights are bundled and can be exposed by adding them to `UIAppFonts` + a helper.)
 - **DEBUG:** the dev tab (`Dev/DateLookupDevView.swift`) shows the chosen mode and a "Replay onboarding" button (resets `hasOnboarded`).
 
 ### Phase 3 decisions (recorded)
@@ -87,7 +87,20 @@ The single most important query in this app: **"give me all entries whose month/
 - **Voice (Part D):** **one** voice note per entry. `Services/VoiceRecorder.swift` records (record → review → keep/discard) to the container; `Services/VoicePlayer.swift` is a single shared player (injected via environment) so only one note plays at a time. **Waveform is hybrid:** the live recording meter is **real** (`AVAudioRecorder` metering → `Shared/LiveWaveformView.swift`); the saved-note waveform is **representative** (`Shared/WaveformView.swift`). **TODO (owner-requested, later):** persist ~40–50 captured levels alongside the note so the saved waveform can be true amplitude without decoding audio.
 - **Composer media icons:** 44×44pt tap targets placed adjacent (HIG minimum + Messages-style density).
 - **Destructive red (confirmed + tokenised):** `Color.appDestructive` (`#CC4D4A`), used for the recording "discard" (✕) button. Owner-approved; now part of the palette.
-- **Still-open visual flags (unchanged):** body-excerpt uses Medium Italic vs the Figma's Regular Italic; the tab bar is the native iOS bar (lowercase) vs the Figma's tall custom bar; the Home book logo reuses the animated GIF (could be a still frame).
+- **Visual flags — resolved/updated:**
+  - *Body excerpt font:* **Medium Italic** vs the Figma's Regular Italic — **owner-confirmed to keep** Medium Italic (no need to register the Regular weight).
+  - *Splash/Home wordmark teal:* **owner-confirmed** to keep the single `appPrimary` `#005363` (not the Figma's #005d4f).
+  - *Home book logo:* now the **custom static `Home` image** in the asset catalog (`Assets.xcassets/Home.imageset`), used in both Home states via `Image("Home")` — replaced the reused animated GIF. (The splash and the App Lock screen still use the animated `Loading.gif`.)
+  - *Tab bar:* **DONE — custom tab bar** (`App/MemoryTabBar.swift`) replaced the native iOS bar. See the post-v1 note below.
+
+### Post-v1 polish — custom tab bar
+
+- **`App/MemoryTabBar.swift` + `App/RootTabView.swift`:** the native `TabView` was replaced with a bespoke bar to match the owner's Figma (`node 260-507`): hand-drawn icons above **italic-serif, Title-Case** labels ("Journal", "Calendar", …) — note this is **Title Case**, a deliberate change from the old lowercase native labels, per the design.
+- **Icons:** owner-supplied PNGs, an `_active` (teal) and `_inactive` (grey) per tab, in the asset catalog (`Journal_active.imageset`, etc.). They're **pre-coloured**, so selecting a tab just swaps the image — we don't tint in code. Source art was 2048² and **downscaled to 144²** when imported (a 2048² asset for a ~30pt icon wastes memory/decode). The design's `#005363` / `#525252` are exactly `appPrimary` / `appBodyText`, so labels use those tokens.
+- **Container:** not `TabView`. All tab screens are kept alive in a `ZStack` (only the selected one is visible / hit-testable / VoiceOver-visible) so each tab **preserves its state** (scroll, the Calendar's selected day, a pushed Journal detail) — verified in the sim. The bar is attached with `.safeAreaInset(edge: .bottom)` so content insets correctly above it on every device; its `appSurface` background ignores the bottom safe area to reach the screen edge, with a hairline along the top.
+- **Sizing adaptation (flagged):** the Figma shows 48pt icon frames; rendered at ~30pt visible (the PNGs carry internal padding) — a deliberate iOS-appropriate adaptation rather than literal 48pt. Labels are `kyotoItalic(14)` with `minimumScaleFactor` so they stay one line under large Dynamic Type.
+- **DEBUG:** the dev tab is appended as a 5th item (SF Symbol `ladybug`) in debug builds only; release shows the four designed items.
+- **Removed:** `DesignSystem/AppAppearance.swift` (it only styled the native `UITabBar`, now unused).
 - **DEBUG:** sample data seeds **relative to today** (so the look-back is always populated) with photo/voice/plain variety and a generated sample image + audio (playable). Launch args for previewing states: `-hasOnboarded`, `-seedTodayEntry`, `-openComposer`, `-openDetail`, `-clearEntriesOnLaunch`, `-focusBody`, `-voiceRecording`, `-voiceReview`. Dev tab has Reseed / Clear / Replay onboarding.
 
 ### Phase 4 decisions (recorded)
