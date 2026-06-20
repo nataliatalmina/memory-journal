@@ -88,6 +88,17 @@ enum MediaStore {
         try? FileManager.default.removeItem(at: audioURL(filename))
     }
 
+    /// Remove EVERY media file from the container — used by "Delete all data" in
+    /// Settings. Deletes the Photos and Audio directories outright, then recreates
+    /// them empty. Callers should delete the entries that referenced these first
+    /// (the bytes here are orphaned once the entries are gone).
+    static func deleteAllMedia() {
+        let fm = FileManager.default
+        try? fm.removeItem(at: photosDirectory)
+        try? fm.removeItem(at: audioDirectory)
+        ensureDirectories()
+    }
+
     /// After a composer save, which files should be deleted? Everything we had
     /// (`original`) or wrote this session (`session`) that the saved entry no
     /// longer references (`final`). Pure set math — kept separate so it can be

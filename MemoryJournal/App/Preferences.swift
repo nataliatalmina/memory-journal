@@ -22,4 +22,9 @@ enum PreferenceKey {
     /// onboarding (screen 2) and later editable in Settings (Phase 6). The
     /// journal's same-date query reads this to know how far back to look.
     static let lookbackMode = "lookbackMode"
+
+    /// `true` when the user has turned on App Lock (Phase 6): require Face ID /
+    /// Touch ID / passcode to open the app. Defaults to `false` (off). Read by
+    /// `AppLock` to decide whether to lock on launch and when backgrounded.
+    static let appLockEnabled = "appLockEnabled"
 }

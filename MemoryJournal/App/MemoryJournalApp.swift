@@ -25,6 +25,10 @@ struct MemoryJournalApp: App {
     // Owns the selected bottom tab, so screens can switch tabs.
     @State private var router = AppRouter()
 
+    // Owns the App Lock state (Phase 6). Created once and injected so `RootView`
+    // can cover the app with the lock screen and re-lock on backgrounding.
+    @State private var appLock = AppLock()
+
     init() {
         AppAppearance.configure()
 
@@ -66,5 +70,6 @@ struct MemoryJournalApp: App {
         .modelContainer(container)
         .environment(voicePlayer)
         .environment(router)
+        .environment(appLock)
     }
 }

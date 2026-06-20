@@ -119,6 +119,20 @@ The single most important query in this app: **"give me all entries whose month/
 - **Accessibility:** each day cell is a button with `accessibilityLabel` = full date, value = "Has an entry"/"No entry", `.isSelected` trait; the weekday header is hidden from VoiceOver (cells already announce dates); chevrons are labelled "Previous/Next month"; day numbers use `minimumScaleFactor` for large Dynamic Type.
 - **DEBUG:** launch args `-startTab calendar` (existing), `-calendarSelectEntry` (jump to the newest entry's month and select it), `-calendarSelectToday` (select today → shows the empty-date state with the default seed).
 
+### Phase 6 decisions (recorded)
+
+- **Settings (`Features/Settings/SettingsView.swift`):** custom grouped cards in the app's editorial style (off-white rounded groups, PP Kyoto, lowercase section titles) — **not** stock `Form` — so it matches the rest of the app. Sections: **look-back · permissions · privacy & security · data · about**.
+- **Look-back — same source of truth:** binds to the SAME `@AppStorage(PreferenceKey.lookbackMode)` that onboarding writes and `JournalView` reads — NOT a copy. A two-segment control (Five-Month / Five-Year) + example chips mirroring onboarding. **Verified live in the sim both directions** (changing it here immediately changes Home's look-back list).
+- **Permissions:** rows show **real** status via `MediaPermissions.status(of:)`; not-determined → in-app system prompt; granted/denied → deep-link to the app's page in the Settings app (`UIApplication.openSettingsURLString`). Honest wording (On / Off / Enable). (iOS only prompts once, so already-decided permissions must be changed in Settings — same pattern as onboarding.)
+- **Privacy policy:** reuses the onboarding `PrivacyPolicyView` (one copy, still **DRAFT**) via a sheet.
+- **App Lock — BUILT FULLY (owner-approved).** `Services/BiometricLock.swift` wraps `LocalAuthentication` using `.deviceOwnerAuthentication` (biometrics **with automatic passcode fallback**). `App/AppLock.swift` (`@Observable`, env-injected) owns `isLocked`: locks on cold launch if enabled and when the app backgrounds (`.inactive`/`.background`), guarded by `isAuthenticating` so presenting Face ID doesn't self-relock. `App/LockScreenView.swift` covers the app (doubles as the app-switcher privacy cover) with an Unlock button; `RootView` auto-prompts on cold launch (`.task`) and on foreground (`scenePhase` `onChange`). The toggle is **disabled with guidance** when no biometrics/passcode are enrolled, and its subtitle adapts (Face ID / Touch ID / passcode). New key `PreferenceKey.appLockEnabled` (default **false**); added `INFOPLIST_KEY_NSFaceIDUsageDescription` to both build configs. **Decision:** the toggle enables/disables the setting **directly** (no confirm-auth-on-enable) — `deviceOwnerAuthentication` always offers the passcode, so there's no lock-out risk, and a detached `Task` inside a custom `Binding` setter was fragile. Verified end-to-end in the sim: lock on launch/background, unlock with a matching face, stays locked on a non-matching face.
+- **Delete all data — BUILT (owner-approved).** A destructive row → standard destructive confirmation alert ("This cannot be undone."); on confirm it deletes all `Entry` records and removes all media via the new `MediaStore.deleteAllMedia()` (deletes the Photos/Audio dirs, recreates them empty).
+- **About:** app name, version/build read from the bundle (`CFBundleShortVersionString`/`CFBundleVersion`), the splash tagline, and an honest "Local-only. Your memories stay on this device." line (honesty rule).
+- **"Future" items LEFT OUT (owner decision):** iCloud sync, Export/backup, and Daily reminder are **not** shown at all (no "coming soon" rows). Nothing is wired (no CloudKit, no notifications), so there's no false privacy implication. Revisit when actually building them.
+- **Accessibility:** permission rows expose name + status + a "Asks for permission"/"Opens Settings" hint; the App Lock row combines children with a descriptive hint; the toggle uses the teal tint; the destructive row has a "cannot be undone" hint.
+- **Open flag (minor):** `BiometricLock.availability()` is read in `.onAppear`, so enrolling Face ID *while staring at* Settings won't refresh the subtitle until you leave and return (normal tab switching re-runs it). Acceptable; revisit if needed.
+- **Roadmap complete:** Phase 6 was the final phase — all six phases are done.
+
 ## Screens
 
 There are four main screens, reached via a bottom tab bar (Journal, Calendar, Prompts, Settings), plus onboarding.
@@ -179,6 +193,6 @@ When in doubt about a visual detail, ask to see the relevant Figma screen rather
 - [x] **Phase 3 — Journal/Home screen** (empty state, create entry, past-entries list, media in entries).
 - [x] **Phase 4 — Prompts screen.**
 - [x] **Phase 5 — Calendar screen.**
-- [ ] **Phase 6 — Settings screen** (incl. changing lookback window, permissions, privacy policy).
+- [x] **Phase 6 — Settings screen** (lookback window, permissions, privacy policy, App Lock, delete all data, about).
 
 Work top to bottom. Don't start a phase before the ones it depends on are done.

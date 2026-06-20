@@ -372,6 +372,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Memory Journal uses the camera only to add photos to your journal entries. Your photos stay on this device — Memory Journal never uploads or shares them.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Memory Journal uses Face ID to lock your journal so only you can open it. Authentication happens on this device; we never store or share your biometric data.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Memory Journal uses the microphone only to record voice notes for your journal entries. Your recordings stay on this device — Memory Journal never uploads or shares them.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Memory Journal accesses your photo library only to add photos you choose to your journal entries. Your photos stay on this device — Memory Journal never uploads or shares them.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -407,6 +408,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Memory Journal uses the camera only to add photos to your journal entries. Your photos stay on this device — Memory Journal never uploads or shares them.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Memory Journal uses Face ID to lock your journal so only you can open it. Authentication happens on this device; we never store or share your biometric data.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Memory Journal uses the microphone only to record voice notes for your journal entries. Your recordings stay on this device — Memory Journal never uploads or shares them.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Memory Journal accesses your photo library only to add photos you choose to your journal entries. Your photos stay on this device — Memory Journal never uploads or shares them.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
