@@ -93,6 +93,10 @@ private struct TabBarButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, Spacing.xs)
             .contentShape(Rectangle())          // whole column is tappable
+            // Switch grey<->teal instantly on tap. Without this, an ambient
+            // animation transaction (e.g. from a tab-content change happening in
+            // the same update) can cross-fade the icon/label, which reads as a lag.
+            .animation(nil, value: isSelected)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(item.title)

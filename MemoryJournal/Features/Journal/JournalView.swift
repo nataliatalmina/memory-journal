@@ -21,8 +21,12 @@ struct JournalView: View {
     // changes — so a newly saved entry appears here immediately.
     @Query(sort: \Entry.date, order: .reverse) private var allEntries: [Entry]
 
-    @State private var showComposer = false
-    @State private var composerEntry: Entry?   // nil → create; set → edit
+    // What the composer should present, if anything. Driving the sheet from an
+    // `Identifiable` item — rather than a Bool plus a separate `Entry?` — is what
+    // fixes the "Edit opens a blank composer" bug: with the split state the sheet
+    // could be built before the entry was applied. With `item`, the presentation
+    // and its content always move together.
+    @State private var composerMode: ComposerMode?
     #if DEBUG
     @State private var showDebugDetail = false   // screenshot hook for the detail view
     #endif
@@ -69,7 +73,7 @@ struct JournalView: View {
             .onAppear {
                 // Testing hook: `-openComposer` auto-opens the composer (edit if
                 // today's entry exists, otherwise create) so it can be screenshotted.
-                if CommandLine.arguments.contains("-openComposer"), !showComposer {
+                if CommandLine.arguments.contains("-openComposer"), composerMode == nil {
                     // Small delay so @Query has populated `todayEntry` first.
                     Task { @MainActor in
                         try? await Task.sleep(for: .seconds(0.4))
@@ -86,9 +90,21 @@ struct JournalView: View {
             }
             #endif
         }
-        .sheet(isPresented: $showComposer) {
-            ComposerView(date: today, existingEntry: composerEntry)
+        .sheet(item: $composerMode) { mode in
+            composerSheet(for: mode)
                 .presentationBackground(Color.appSurface)
+        }
+    }
+
+    /// Builds the composer for the requested mode. Create and edit share one
+    /// screen; edit passes the existing entry so its title/body/media load.
+    @ViewBuilder
+    private func composerSheet(for mode: ComposerMode) -> some View {
+        switch mode {
+        case .create:
+            ComposerView(date: today, existingEntry: nil)
+        case .edit(let entry):
+            ComposerView(date: today, existingEntry: entry)
         }
     }
 
@@ -126,14 +142,21 @@ struct JournalView: View {
         }
     }
 
-    private func openCreate() {
-        composerEntry = nil
-        showComposer = true
-    }
+    private func openCreate() { composerMode = .create }
+    private func openEdit(_ entry: Entry) { composerMode = .edit(entry) }
 
-    private func openEdit(_ entry: Entry) {
-        composerEntry = entry
-        showComposer = true
+    /// Drives the composer sheet. An `Identifiable` item (not a Bool + optional
+    /// Entry) keeps the sheet's identity and its content in lock-step.
+    private enum ComposerMode: Identifiable {
+        case create
+        case edit(Entry)
+
+        var id: String {
+            switch self {
+            case .create:          "create"
+            case .edit(let entry): entry.id.uuidString
+            }
+        }
     }
 }
 
@@ -167,15 +190,26 @@ private struct HomeHeader: View {
     }
 }
 
-/// Today's entry shown in the header area, with an "Edit memory" button.
+/// Today's entry shown in the header area. Tapping the content opens the same
+/// read-only detail view the look-back rows use (so a long entry can be read in
+/// full without entering edit mode); the separate "Edit memory" button is the
+/// explicit way to edit. The voice-note play button inside stays independently
+/// tappable — the same nesting the look-back rows already rely on.
 private struct TodayEntryBlock: View {
     let entry: Entry
     let onEdit: () -> Void
 
     var body: some View {
         VStack(spacing: Spacing.lg) {
-            EntryContent(entry: entry)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            NavigationLink {
+                EntryDetailView(entry: entry)
+            } label: {
+                EntryContent(entry: entry)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
             AppButton(title: "Edit memory", action: onEdit)
                 .frame(maxWidth: 300)
         }

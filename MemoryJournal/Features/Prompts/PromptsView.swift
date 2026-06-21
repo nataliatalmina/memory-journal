@@ -25,6 +25,7 @@ struct PromptsView: View {
     @State private var selectedPrompt: String?
     @State private var showComposer = false
     @State private var didSaveFromPrompt = false
+    @State private var showTodayDetail = false   // read-only view of today's entry
 
     // DEBUG: preview future days without waiting for midnight. Shifts ONLY which
     // prompts are shown — never the entry's date (prompts are today-only).
@@ -83,6 +84,23 @@ struct PromptsView: View {
                          prompt: selectedPrompt,
                          onSaved: { didSaveFromPrompt = true })
                 .presentationBackground(Color.appSurface)
+        }
+        // "View today's memory" opens the entry READ-ONLY (not the Home tab).
+        // Wrapped in a NavigationStack so the reused `EntryDetailView` gets a bar
+        // for the Done button; the environment-injected VoicePlayer carries into
+        // the sheet, so the voice note still plays.
+        .sheet(isPresented: $showTodayDetail) {
+            if let todayEntry {
+                NavigationStack {
+                    EntryDetailView(entry: todayEntry)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { showTodayDetail = false }
+                            }
+                        }
+                }
+                .presentationBackground(Color.appBackground)
+            }
         }
         #if DEBUG
         .onAppear {
@@ -145,7 +163,7 @@ struct PromptsView: View {
     @ViewBuilder
     private var bottomButton: some View {
         if hasTodayEntry {
-            AppButton(title: "View today's memory") { router.selectedTab = .journal }
+            AppButton(title: "View today's memory") { showTodayDetail = true }
                 .padding(.horizontal, Spacing.lg)
                 .padding(.bottom, Spacing.md)
         } else if selectedPrompt != nil {
