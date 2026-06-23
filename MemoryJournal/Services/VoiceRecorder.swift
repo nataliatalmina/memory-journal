@@ -51,11 +51,10 @@ final class VoiceRecorder {
     /// preview before it's saved (empty when there's nothing recorded).
     var capturedWaveform: [CGFloat] { Self.downsample(capturedLevels, to: Self.savedBarCount) }
 
-    /// Begin recording. Throws if the audio session or recorder can't be set up.
+    /// Begin recording. Throws if the recorder can't be set up.
     func start() throws {
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
-        try session.setActive(true)
+        // Cached session config (no re-route when already set up for recording).
+        AudioSession.activate(.playAndRecord, options: [.defaultToSpeaker])
 
         MediaStore.ensureDirectories()
         let filename = "\(UUID().uuidString).m4a"
@@ -67,6 +66,7 @@ final class VoiceRecorder {
         ]
         let newRecorder = try AVAudioRecorder(url: MediaStore.audioURL(filename), settings: settings)
         newRecorder.isMeteringEnabled = true   // required for the live meter
+        newRecorder.prepareToRecord()          // buffer ahead so record() starts promptly
         newRecorder.record()
 
         recorder = newRecorder

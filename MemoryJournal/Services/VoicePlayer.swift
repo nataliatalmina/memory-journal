@@ -40,12 +40,12 @@ final class VoicePlayer: NSObject {
         let url = MediaStore.audioURL(filename)
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default)
-            try session.setActive(true)
+            // Cached session config (no re-route when already set up for playback).
+            AudioSession.activate(.playback)
 
             let newPlayer = try AVAudioPlayer(contentsOf: url)
             newPlayer.delegate = self
+            newPlayer.prepareToPlay()   // buffer ahead so play() starts promptly
             newPlayer.play()
 
             player = newPlayer
