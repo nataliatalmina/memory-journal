@@ -94,16 +94,6 @@ struct ComposerView: View {
                         VoiceNotePlayerBar(filename: voiceFilename, onRemove: removeVoice)
                             .padding(.top, Spacing.lg)
                     }
-
-                    // Edit mode only: delete today's entry (gated by a confirmation).
-                    if existingEntry != nil {
-                        HStack {
-                            Spacer()
-                            DeleteMemoryButton(onConfirm: deleteEntry)
-                            Spacer()
-                        }
-                        .padding(.top, Spacing.xl)
-                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.xl)
@@ -113,9 +103,18 @@ struct ComposerView: View {
             mediaToolbar
                 .padding(.horizontal, Spacing.xl)
 
-            actionBar
-                .padding(.horizontal, Spacing.xl)
-                .padding(.bottom, Spacing.md)
+            // Save, with the (edit-mode) delete sitting quietly beneath it — a
+            // secondary, destructive action kept clearly below the primary one.
+            // Hidden while recording/reviewing (the action bar is the audio bar then).
+            VStack(spacing: Spacing.md) {
+                actionBar
+
+                if existingEntry != nil, recorder.phase == .idle {
+                    DeleteMemoryButton(onConfirm: deleteEntry)
+                }
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.bottom, Spacing.md)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appSurface)
@@ -198,8 +197,12 @@ struct ComposerView: View {
             }
     }
 
-    // MARK: - Body (multi-line, grows with content, custom placeholder)
+    // MARK: - Body (multi-line, custom placeholder)
 
+    // We use a `TextEditor` here, NOT `TextField(axis: .vertical)`. A vertical text
+    // field treats the Return key as "submit" and won't let you start a new line/
+    // paragraph; a `TextEditor` is true multi-line input where Return inserts a
+    // newline — which is what you want when writing a journal entry.
     private var bodyField: some View {
         ZStack(alignment: .topLeading) {
             if bodyText.isEmpty {
@@ -207,12 +210,16 @@ struct ComposerView: View {
                     .font(.kyotoItalic(size: 18))
                     .foregroundStyle(Color.appBodyText.opacity(0.8))
                     .allowsHitTesting(false)
+                    .padding(.top, 8)   // line the placeholder up with the editor's first line
             }
-            TextField("", text: $bodyText, axis: .vertical)
+            TextEditor(text: $bodyText)
                 .font(.kyoto(size: 18))
                 .foregroundStyle(Color.appBodyText)
                 .tint(Color.appPrimary)
                 .focused($bodyFocused)
+                .scrollContentBackground(.hidden)   // show our appSurface, not the editor's default background
+                .padding(.leading, -5)              // cancel the editor's built-in text inset so the body lines up with the title
+                .frame(minHeight: 160)
         }
     }
 
