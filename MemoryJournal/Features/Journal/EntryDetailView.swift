@@ -18,14 +18,55 @@ import SwiftUI
 struct EntryDetailView: View {
     let entry: Entry
 
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         ScrollView {
-            EntryReadContent(entry: entry)
-                .padding(Spacing.lg)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: Spacing.xl) {
+                EntryReadContent(entry: entry)
+
+                // A deliberate, understated way to remove a past memory — gated by
+                // a confirmation. On delete we pop back (Home) / dismiss the sheet
+                // (Prompts); the @Query then drops it from the look-back list.
+                HStack {
+                    Spacer()
+                    DeleteMemoryButton {
+                        entry.deleteWithMedia(in: context)
+                        dismiss()
+                    }
+                    Spacer()
+                }
+                .padding(.top, Spacing.lg)
+            }
+            .padding(Spacing.lg)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Color.appBackground)
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// A calm, deliberate "delete this memory" affordance — understated red text + a
+/// trash icon, gated behind a confirmation. Reused by the entry detail view and
+/// the composer's edit mode so deletion looks and reads the same everywhere.
+struct DeleteMemoryButton: View {
+    let onConfirm: () -> Void
+    @State private var showConfirm = false
+
+    var body: some View {
+        Button { showConfirm = true } label: {
+            Label("Delete this memory", systemImage: "trash")
+                .font(.kyoto(size: 16))
+                .foregroundStyle(Color.appDestructive)
+        }
+        .buttonStyle(.plain)
+        .alert("Delete this memory?", isPresented: $showConfirm) {
+            Button("Delete", role: .destructive, action: onConfirm)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently removes this memory, including its photos and voice note, from this device. This can't be undone.")
+        }
     }
 }
 

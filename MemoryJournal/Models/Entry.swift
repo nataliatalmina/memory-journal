@@ -98,4 +98,14 @@ extension Entry {
         let hasBody = !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return hasBody || photoCount > 0 || hasAudio
     }
+
+    /// Permanently delete this entry and the media files it owns — its photos and
+    /// its voice note (whose `deleteAudio` also removes the waveform sidecar). Used
+    /// by the per-entry delete in the detail view and the composer's edit mode.
+    func deleteWithMedia(in context: ModelContext) {
+        for filename in photoFilenames { MediaStore.deletePhoto(filename) }
+        if let voiceNoteFilename { MediaStore.deleteAudio(voiceNoteFilename) }
+        context.delete(self)
+        try? context.save()
+    }
 }

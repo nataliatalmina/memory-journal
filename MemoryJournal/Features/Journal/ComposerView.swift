@@ -64,6 +64,7 @@ struct ComposerView: View {
     @State private var micDeniedAlert = false
 
     @State private var didSave = false
+    @State private var didDelete = false   // deleted the entry → don't auto-save on dismiss
 
     private var canSave: Bool {
         Entry.hasSavableContent(body: bodyText,
@@ -92,6 +93,16 @@ struct ComposerView: View {
                     if let voiceFilename {
                         VoiceNotePlayerBar(filename: voiceFilename, onRemove: removeVoice)
                             .padding(.top, Spacing.lg)
+                    }
+
+                    // Edit mode only: delete today's entry (gated by a confirmation).
+                    if existingEntry != nil {
+                        HStack {
+                            Spacer()
+                            DeleteMemoryButton(onConfirm: deleteEntry)
+                            Spacer()
+                        }
+                        .padding(.top, Spacing.xl)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -396,9 +407,23 @@ struct ComposerView: View {
         dismiss()
     }
 
+    /// Delete the entry being edited (today's entry) and everything it owns,
+    /// including anything added in this session. Only available in edit mode.
+    private func deleteEntry() {
+        guard let entry = existingEntry else { return }
+        player.stop()
+        if recorder.phase != .idle { recorder.discard() }
+        // Files written this session that won't be kept.
+        for filename in sessionFiles { MediaStore.deletePhoto(filename) }
+        for filename in audioSessionFiles { MediaStore.deleteAudio(filename) }
+        entry.deleteWithMedia(in: context)
+        didDelete = true   // so handleDismiss doesn't auto-save on the way out
+        dismiss()
+    }
+
     private func handleDismiss() {
-        // The explicit Save button already saved and cleaned up.
-        guard !didSave else { return }
+        // The explicit Save button saved + cleaned up; delete tore everything down.
+        guard !didSave, !didDelete else { return }
         player.stop()
         // A recording that was never "kept" (still recording or in review) isn't
         // part of the entry — abandon it before deciding whether to save.
