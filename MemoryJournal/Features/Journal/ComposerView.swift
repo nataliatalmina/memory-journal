@@ -7,8 +7,13 @@
 //    • create — `existingEntry == nil`: a fresh entry for `date`.
 //    • edit   — `existingEntry != nil`: load that entry's title/body/media and update.
 //
-//  Save rule (confirmed with owner): an entry needs non-whitespace BODY text.
-//  Title is optional. Photos/voice don't change that rule.
+//  Save rule (confirmed with owner): an entry needs ANY real content — body
+//  text, at least one photo, or a voice note (`Entry.hasSavableContent`). Title
+//  is optional and never enough on its own.
+//
+//  Dismiss rule: swiping the sheet away AUTO-SAVES when there's savable content
+//  (like Apple Notes), so a draft is never silently lost. With nothing to save,
+//  dismissing just cleans up. There is no separate Cancel button.
 //
 //  Photos (Part C): up to 3, library (PhotosPicker, no permission) or camera
 //  (needs permission). Voice (Part D): ONE voice note per entry, via the mic
@@ -60,7 +65,11 @@ struct ComposerView: View {
 
     @State private var didSave = false
 
-    private var canSave: Bool { Entry.cleanedInput(title: title, body: bodyText) != nil }
+    private var canSave: Bool {
+        Entry.hasSavableContent(body: bodyText,
+                                photoCount: photoFilenames.count,
+                                hasAudio: voiceFilename != nil)
+    }
     private var canAddPhotos: Bool { photoFilenames.count < maxPhotos }
     private var canRecord: Bool { voiceFilename == nil && recorder.phase == .idle }
 
@@ -155,7 +164,7 @@ struct ComposerView: View {
             }
             #endif
         }
-        .onDisappear(perform: cleanUpIfCancelled)
+        .onDisappear(perform: handleDismiss)
     }
 
     // MARK: - Title (single line, custom-coloured placeholder)
@@ -348,7 +357,8 @@ struct ComposerView: View {
     // MARK: - Save / cleanup
 
     private func save() {
-        guard let cleaned = Entry.cleanedInput(title: title, body: bodyText) else { return }
+        guard canSave else { return }
+        let cleaned = Entry.cleanedInput(title: title, body: bodyText)
         let finalPhotos = photoFilenames
         let finalVoice = voiceFilename
 
@@ -386,14 +396,23 @@ struct ComposerView: View {
         dismiss()
     }
 
-    private func cleanUpIfCancelled() {
+    private func handleDismiss() {
+        // The explicit Save button already saved and cleaned up.
         guard !didSave else { return }
-        // Left without saving: drop everything written this session, and abandon
-        // any in-progress / unconfirmed recording. Original files are untouched.
         player.stop()
+        // A recording that was never "kept" (still recording or in review) isn't
+        // part of the entry — abandon it before deciding whether to save.
         if recorder.phase != .idle { recorder.discard() }
-        for filename in sessionFiles { MediaStore.deletePhoto(filename) }
-        for filename in audioSessionFiles { MediaStore.deleteAudio(filename) }
+
+        if canSave {
+            // Swiped away with content → auto-save so the draft is never lost.
+            save()
+        } else {
+            // Nothing worth keeping — drop anything written this session.
+            // (Original files on an edited entry are untouched.)
+            for filename in sessionFiles { MediaStore.deletePhoto(filename) }
+            for filename in audioSessionFiles { MediaStore.deleteAudio(filename) }
+        }
     }
 }
 

@@ -2,8 +2,9 @@
 //  ComposerSaveRuleTests.swift
 //  MemoryJournalTests
 //
-//  The composer's "enough to save" rule (Phase 3B): body must have real text,
-//  title is optional, both are trimmed.
+//  The composer's save rule: an entry needs ANY real content — body text, a
+//  photo, or a voice note (`hasSavableContent`); a title alone is not enough.
+//  `cleanedInput` just trims the text (title blank → nil, body trimmed).
 //
 
 import Testing
@@ -12,25 +13,48 @@ import Testing
 @MainActor
 struct ComposerSaveRuleTests {
 
-    @Test func emptyOrWhitespaceBodyCannotSave() {
-        #expect(Entry.cleanedInput(title: "A title", body: "") == nil)
-        #expect(Entry.cleanedInput(title: "A title", body: "   \n  \t ") == nil)
+    // MARK: - hasSavableContent (the gate)
+
+    @Test func bodyTextIsSavable() {
+        #expect(Entry.hasSavableContent(body: "Today was good", photoCount: 0, hasAudio: false))
+    }
+
+    @Test func emptyOrWhitespaceWithNoMediaIsNotSavable() {
+        #expect(!Entry.hasSavableContent(body: "", photoCount: 0, hasAudio: false))
+        #expect(!Entry.hasSavableContent(body: "   \n\t ", photoCount: 0, hasAudio: false))
+    }
+
+    @Test func aPhotoAloneIsSavable() {
+        #expect(Entry.hasSavableContent(body: "", photoCount: 1, hasAudio: false))
+    }
+
+    @Test func aVoiceNoteAloneIsSavable() {
+        #expect(Entry.hasSavableContent(body: "  ", photoCount: 0, hasAudio: true))
     }
 
     @Test func titleAloneIsNotEnough() {
-        // A title with no body still can't be saved.
-        #expect(Entry.cleanedInput(title: "Just a title", body: "  ") == nil)
+        // The title isn't even an input to the gate — only real content counts.
+        #expect(!Entry.hasSavableContent(body: "", photoCount: 0, hasAudio: false))
     }
 
-    @Test func bodyTextIsEnough_andEmptyTitleBecomesNil() throws {
-        let cleaned = try #require(Entry.cleanedInput(title: "   ", body: "  Hello world  "))
-        #expect(cleaned.title == nil)            // blank title → nil
-        #expect(cleaned.body == "Hello world")   // trimmed
+    // MARK: - cleanedInput (trimming only)
+
+    @Test func blankTitleBecomesNil_andBodyIsTrimmed() {
+        let cleaned = Entry.cleanedInput(title: "   ", body: "  Hello world  ")
+        #expect(cleaned.title == nil)
+        #expect(cleaned.body == "Hello world")
     }
 
-    @Test func titleAndBodyAreTrimmed() throws {
-        let cleaned = try #require(Entry.cleanedInput(title: "  Park  ", body: "\n went out today \n"))
+    @Test func titleAndBodyAreTrimmed() {
+        let cleaned = Entry.cleanedInput(title: "  Park  ", body: "\n went out today \n")
         #expect(cleaned.title == "Park")
         #expect(cleaned.body == "went out today")
+    }
+
+    @Test func mediaOnlyEntryKeepsAnEmptyBody() {
+        // No body text (carried by media) → trims to an empty string, not a crash.
+        let cleaned = Entry.cleanedInput(title: "", body: "   ")
+        #expect(cleaned.title == nil)
+        #expect(cleaned.body == "")
     }
 }

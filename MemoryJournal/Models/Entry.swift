@@ -80,16 +80,22 @@ final class Entry {
 }
 
 extension Entry {
-    /// Apply the composer's "enough to save" rules to raw field text:
-    ///  - trims leading/trailing whitespace and newlines,
+    /// Normalise raw composer field text for saving:
+    ///  - trims leading/trailing whitespace and newlines from both,
     ///  - an all-whitespace title becomes `nil` (title is optional),
-    ///  - returns `nil` when the body has no real text — an empty entry can't be
-    ///    saved (title alone is not enough).
-    /// Returning `nil` is the single source of truth for "can't save".
-    static func cleanedInput(title: String, body: String) -> (title: String?, body: String)? {
-        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedBody.isEmpty else { return nil }
+    ///  - the body is returned trimmed and may be empty (an entry can be carried
+    ///    by media alone — see `hasSavableContent`).
+    static func cleanedInput(title: String, body: String) -> (title: String?, body: String) {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
         return (trimmedTitle.isEmpty ? nil : trimmedTitle, trimmedBody)
+    }
+
+    /// The single source of truth for "is there enough to save?". An entry needs
+    /// **any real content** — body text, at least one photo, or a voice note. A
+    /// title on its own is NOT enough (it's metadata, not content).
+    static func hasSavableContent(body: String, photoCount: Int, hasAudio: Bool) -> Bool {
+        let hasBody = !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return hasBody || photoCount > 0 || hasAudio
     }
 }
