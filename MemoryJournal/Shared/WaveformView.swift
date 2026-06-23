@@ -25,18 +25,43 @@ struct WaveformView: View {
         return Self.representativeBars
     }
 
+    /// Thin bars with a tight, fixed gap — the iMessage voice-memo look (and the
+    /// same pitch as the live recording meter).
+    private let barWidth: CGFloat = 2
+    private let barSpacing: CGFloat = 2
+
     var body: some View {
         GeometryReader { geo in
-            HStack(spacing: 2) {
-                ForEach(bars.indices, id: \.self) { index in
-                    let played = Double(index) / Double(bars.count) <= progress
+            // Pick how many bars fit at the fixed pitch, then RESAMPLE the levels to
+            // that count — so the row stays full and tightly packed regardless of
+            // width, instead of stretching a fixed number of bars far apart.
+            let count = max(1, Int((geo.size.width + barSpacing) / (barWidth + barSpacing)))
+            let display = Self.resample(bars, to: count)
+
+            HStack(spacing: barSpacing) {
+                ForEach(display.indices, id: \.self) { index in
+                    let played = Double(index) / Double(display.count) <= progress
                     Capsule()
                         .fill(color.opacity(played ? 1 : 0.55))
                         // A small floor keeps quiet bars visible rather than vanishing.
-                        .frame(height: geo.size.height * max(0.08, bars[index]))
+                        .frame(width: barWidth, height: geo.size.height * max(0.08, display[index]))
                 }
             }
-            .frame(maxHeight: .infinity, alignment: .center)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+    }
+
+    /// Resample `values` to `count` points by linear interpolation (handles both
+    /// up- and down-sampling), so the waveform shape is preserved at whatever bar
+    /// count fits the width.
+    private static func resample(_ values: [CGFloat], to count: Int) -> [CGFloat] {
+        guard values.count > 1, count > 1 else { return values }
+        return (0..<count).map { i in
+            let t = Double(i) / Double(count - 1) * Double(values.count - 1)
+            let lo = Int(t)
+            let hi = min(values.count - 1, lo + 1)
+            let frac = CGFloat(t - Double(lo))
+            return values[lo] * (1 - frac) + values[hi] * frac
         }
     }
 
