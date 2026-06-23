@@ -48,6 +48,8 @@ struct RecordingBar: View {
 /// Reviewing a take: discard it, preview it (play/pause + waveform), or keep it.
 struct ReviewBar: View {
     let filename: String
+    /// The just-recorded take's real captured amplitudes (for the preview).
+    var levels: [CGFloat] = []
     let onDiscard: () -> Void
     let onConfirm: () -> Void
 
@@ -73,7 +75,7 @@ struct ReviewBar: View {
                         .font(.system(size: 18))
                         .foregroundStyle(.white)
                 }
-                WaveformView(progress: isPlaying ? player.progress : 0)
+                WaveformView(progress: isPlaying ? player.progress : 0, levels: levels)
                     .frame(height: 14)
                     .frame(maxWidth: .infinity)
             }

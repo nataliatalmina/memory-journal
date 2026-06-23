@@ -253,6 +253,7 @@ struct ComposerView: View {
         case .reviewing:
             if let take = recorder.recordedFilename {
                 ReviewBar(filename: take,
+                          levels: recorder.capturedWaveform,
                           onDiscard: { player.stop(); recorder.discard() },
                           onConfirm: confirmVoice)
             }

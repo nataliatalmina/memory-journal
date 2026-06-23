@@ -115,6 +115,9 @@ struct VoiceNotePlayerBar: View {
     var onRemove: (() -> Void)? = nil
 
     @Environment(VoicePlayer.self) private var player
+    /// This note's real captured amplitudes, loaded from its sidecar (nil → the
+    /// waveform falls back to the representative pattern).
+    @State private var levels: [CGFloat]?
 
     private var isPlaying: Bool { player.isPlaying(filename) }
 
@@ -129,7 +132,7 @@ struct VoiceNotePlayerBar: View {
             }
             .accessibilityLabel(isPlaying ? "Pause voice note" : "Play voice note")
 
-            WaveformView(progress: isPlaying ? player.progress : 0)
+            WaveformView(progress: isPlaying ? player.progress : 0, levels: levels)
                 .frame(height: 15)
                 .frame(maxWidth: .infinity)
 
@@ -149,5 +152,7 @@ struct VoiceNotePlayerBar: View {
         .frame(maxWidth: .infinity)
         .background(Color.appPrimary)
         .clipShape(.rect(cornerRadius: CornerRadius.button))
+        // Load this note's captured levels once (and again if the filename changes).
+        .task(id: filename) { levels = MediaStore.loadLevels(forAudio: filename) }
     }
 }

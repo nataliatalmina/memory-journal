@@ -83,9 +83,37 @@ enum MediaStore {
         try? FileManager.default.removeItem(at: photoURL(filename))
     }
 
-    /// Delete an audio file. Safe to call if it doesn't exist.
+    /// Delete an audio file (and its waveform sidecar). Safe to call if missing.
     static func deleteAudio(_ filename: String) {
         try? FileManager.default.removeItem(at: audioURL(filename))
+        try? FileManager.default.removeItem(at: levelsURL(forAudio: filename))
+    }
+
+    // MARK: - Waveform levels (sidecar alongside each voice note)
+
+    /// The sidecar that holds a voice note's captured amplitude levels, e.g.
+    /// `<uuid>.m4a` → `<uuid>.m4a.levels`. Stored next to the audio so it follows
+    /// the same lifecycle (committed on save, removed by `deleteAudio` /
+    /// `deleteAllMedia`). It's tiny metadata (~48 numbers), never the audio bytes.
+    static func levelsURL(forAudio filename: String) -> URL {
+        audioURL(filename).appendingPathExtension("levels")
+    }
+
+    /// Persist the captured 0...1 levels for a voice note (JSON `[Float]`).
+    static func saveLevels(_ levels: [Float], forAudio filename: String) {
+        ensureDirectories()
+        guard let data = try? JSONEncoder().encode(levels) else { return }
+        try? data.write(to: levelsURL(forAudio: filename), options: .atomic)
+    }
+
+    /// Load a voice note's captured levels, or `nil` when there's no sidecar
+    /// (e.g. notes recorded before this existed) — callers fall back to a
+    /// representative waveform.
+    static func loadLevels(forAudio filename: String) -> [CGFloat]? {
+        guard let data = try? Data(contentsOf: levelsURL(forAudio: filename)),
+              let floats = try? JSONDecoder().decode([Float].self, from: data),
+              !floats.isEmpty else { return nil }
+        return floats.map { CGFloat($0) }
     }
 
     /// Remove EVERY media file from the container — used by "Delete all data" in
@@ -150,6 +178,17 @@ enum MediaStore {
     /// DEBUG-only; real notes come from the recorder.
     static func writeSampleAudio(filename: String, seconds: Double = 2.0) {
         ensureDirectories()
+
+        // A decaying sample waveform so seeded notes show a real-looking SAVED
+        // waveform too (matches the synthesized tone's exp(-1.2·t) decay below).
+        let sampleBars: [Float] = (0..<48).map { i in
+            let t = Double(i) / 48 * seconds
+            let envelope = exp(-1.2 * t)
+            let wobble = 0.85 + 0.15 * abs(sin(Double(i) * 0.9))
+            return Float(max(0.08, envelope * wobble))
+        }
+        saveLevels(sampleBars, forAudio: filename)
+
         let url = audioURL(filename)
         guard !FileManager.default.fileExists(atPath: url.path) else { return }
 
