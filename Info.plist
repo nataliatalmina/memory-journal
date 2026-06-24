@@ -15,5 +15,11 @@
 		<string>PPKyoto-MediumItalic.otf</string>
 		<string>PPKyoto-Bold.otf</string>
 	</array>
+	<!-- Export-compliance declaration. Memory Journal uses only standard iOS
+	     encryption (Data Protection at rest, HTTPS via the OS) and no custom or
+	     proprietary cryptography, so it's exempt. Declaring it here means Xcode
+	     won't ask the export-compliance question on every App Store upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
