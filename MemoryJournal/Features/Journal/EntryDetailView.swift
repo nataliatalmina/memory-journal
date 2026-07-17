@@ -2,8 +2,8 @@
 //  EntryDetailView.swift
 //  MemoryJournal
 //
-//  Read-only view of a past entry, pushed when a look-back row is tapped. It
-//  shows the full body (not truncated) plus any photos and the voice note.
+//  Read-only view of a past entry, presented as a sheet when an entry is tapped.
+//  It shows the full body (not truncated) plus any photos and the voice note.
 //
 //  Design decision (Part A) — see CLAUDE.md / the session notes: tapping a past
 //  memory opens this dedicated READ-ONLY view rather than reusing the composer.
@@ -27,8 +27,8 @@ struct EntryDetailView: View {
                 EntryReadContent(entry: entry)
 
                 // A deliberate, understated way to remove a past memory — gated by
-                // a confirmation. On delete we pop back (Home) / dismiss the sheet
-                // (Prompts); the @Query then drops it from the look-back list.
+                // a confirmation. On delete we dismiss the sheet; the @Query then
+                // drops it from the look-back list.
                 HStack {
                     Spacer()
                     DeleteMemoryButton {

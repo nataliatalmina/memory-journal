@@ -27,9 +27,13 @@ struct JournalView: View {
     // could be built before the entry was applied. With `item`, the presentation
     // and its content always move together.
     @State private var composerMode: ComposerMode?
-    #if DEBUG
-    @State private var showDebugDetail = false   // screenshot hook for the detail view
-    #endif
+
+    // The past entry currently open in the read-only detail SHEET (nil = closed).
+    // We present the detail view as a sheet rather than pushing it: a pushed view
+    // lives inside the tab's screen, so the custom bottom tab bar (added via
+    // `.safeAreaInset` in RootTabView) overlaps its lower content and traps the
+    // "Delete this memory" button. A sheet floats above the bar, keeping it reachable.
+    @State private var detailEntry: Entry?
 
     private var today: Date { Calendar.current.startOfDay(for: .now) }
 
@@ -65,11 +69,6 @@ struct JournalView: View {
             }
             .toolbar(.hidden, for: .navigationBar)   // we draw our own header
             #if DEBUG
-            .navigationDestination(isPresented: $showDebugDetail) {
-                if let entry = lookbackEntries.first {
-                    EntryDetailView(entry: entry)
-                }
-            }
             .onAppear {
                 // Testing hook: `-openComposer` auto-opens the composer (edit if
                 // today's entry exists, otherwise create) so it can be screenshotted.
@@ -80,11 +79,11 @@ struct JournalView: View {
                         if let todayEntry { openEdit(todayEntry) } else { openCreate() }
                     }
                 }
-                // Testing hook: `-openDetail` pushes the first look-back entry's read view.
+                // Testing hook: `-openDetail` opens the first look-back entry's read sheet.
                 if CommandLine.arguments.contains("-openDetail") {
                     Task { @MainActor in
                         try? await Task.sleep(for: .seconds(0.4))
-                        showDebugDetail = true
+                        detailEntry = lookbackEntries.first
                     }
                 }
             }
@@ -93,6 +92,21 @@ struct JournalView: View {
         .sheet(item: $composerMode) { mode in
             composerSheet(for: mode)
                 .presentationBackground(Color.appSurface)
+        }
+        // Read-only detail, presented as a sheet (see `detailEntry`). Wrapped in a
+        // NavigationStack so the reused EntryDetailView gets a bar for the Done
+        // button; the environment-injected VoicePlayer carries into the sheet so the
+        // voice note still plays — the same pattern the Prompts screen uses.
+        .sheet(item: $detailEntry) { entry in
+            NavigationStack {
+                EntryDetailView(entry: entry)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { detailEntry = nil }
+                        }
+                    }
+            }
+            .presentationBackground(Color.appBackground)
         }
     }
 
@@ -118,7 +132,9 @@ struct JournalView: View {
                 // Today's entry sits up top (per design + owner's choice). If none
                 // exists yet, show the create call-to-action instead.
                 if let todayEntry {
-                    TodayEntryBlock(entry: todayEntry) { openEdit(todayEntry) }
+                    TodayEntryBlock(entry: todayEntry,
+                                    onOpen: { detailEntry = todayEntry },
+                                    onEdit: { openEdit(todayEntry) })
                         .padding(.horizontal, Spacing.lg)
                         .padding(.bottom, Spacing.lg)
                 } else {
@@ -130,8 +146,8 @@ struct JournalView: View {
 
                 ForEach(lookbackEntries) { entry in
                     RowDivider()
-                    NavigationLink {
-                        EntryDetailView(entry: entry)
+                    Button {
+                        detailEntry = entry
                     } label: {
                         EntryRow(entry: entry)
                     }
@@ -191,19 +207,18 @@ private struct HomeHeader: View {
 }
 
 /// Today's entry shown in the header area. Tapping the content opens the same
-/// read-only detail view the look-back rows use (so a long entry can be read in
+/// read-only detail SHEET the look-back rows use (so a long entry can be read in
 /// full without entering edit mode); the separate "Edit memory" button is the
 /// explicit way to edit. The voice-note play button inside stays independently
 /// tappable — the same nesting the look-back rows already rely on.
 private struct TodayEntryBlock: View {
     let entry: Entry
+    let onOpen: () -> Void
     let onEdit: () -> Void
 
     var body: some View {
         VStack(spacing: Spacing.lg) {
-            NavigationLink {
-                EntryDetailView(entry: entry)
-            } label: {
+            Button(action: onOpen) {
                 EntryContent(entry: entry)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
