@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- The name shown under the app icon on the Home Screen and in the Settings
+	     app. Set explicitly so it reads "keepsake" rather than the Xcode product
+	     name ("MemoryJournal"). The bundle identifier and Xcode target are
+	     unchanged — only this user-facing label differs. -->
+	<key>CFBundleDisplayName</key>
+	<string>keepsake</string>
 	<!-- Fonts to register at launch. These filenames must exist in the app
 	     bundle (they're in MemoryJournal/DesignSystem/Fonts and bundled by the
 	     file-system synchronized group). We register only the two weights the
@@ -15,7 +21,7 @@
 		<string>PPKyoto-MediumItalic.otf</string>
 		<string>PPKyoto-Bold.otf</string>
 	</array>
-	<!-- Export-compliance declaration. Memory Journal uses only standard iOS
+	<!-- Export-compliance declaration. keepsake uses only standard iOS
 	     encryption (Data Protection at rest, HTTPS via the OS) and no custom or
 	     proprietary cryptography, so it's exempt. Declaring it here means Xcode
 	     won't ask the export-compliance question on every App Store upload. -->

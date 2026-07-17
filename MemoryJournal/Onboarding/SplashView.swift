@@ -3,7 +3,7 @@
 //  MemoryJournal
 //
 //  Onboarding screen 1 — the loading/splash. The animated book GIF, the
-//  "memory journal" wordmark, and a two-line tagline that fades in line by line.
+//  "keepsake" wordmark, and a two-line tagline that fades in line by line.
 //  It AUTO-ADVANCES on its own after the intro (your chosen behaviour: no tap).
 //
 
@@ -28,7 +28,7 @@ struct SplashView: View {
                 .frame(width: 260, height: 260)   // the GIF is square; scaled down from 2048²
 
             VStack(spacing: Spacing.lg) {
-                Text("memory journal")
+                Text("keepsake")
                     // Wordmark. The Figma's slightly greener teal (#005d4f) was a
                     // mistake; we use the palette's single `appPrimary` (#005363).
                     // (Owner-confirmed — keep one teal everywhere for consistency.)

@@ -134,7 +134,7 @@ struct ComposerView: View {
             Button("Open Settings") { openSettings() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("To take a photo, turn on camera access for Memory Journal in Settings. You can still add photos from your library.")
+            Text("To take a photo, turn on camera access for keepsake in Settings. You can still add photos from your library.")
         }
         .alert("Camera Unavailable", isPresented: $cameraUnavailableAlert) {
             Button("OK", role: .cancel) {}
@@ -145,7 +145,7 @@ struct ComposerView: View {
             Button("Open Settings") { openSettings() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("To record a voice note, turn on microphone access for Memory Journal in Settings.")
+            Text("To record a voice note, turn on microphone access for keepsake in Settings.")
         }
         .onAppear {
             if let entry = existingEntry {

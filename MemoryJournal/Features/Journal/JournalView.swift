@@ -176,7 +176,7 @@ struct JournalView: View {
     }
 }
 
-/// Book logo, "memory journal", today's date. (The action button lives below it,
+/// Book logo, "keepsake", today's date. (The action button lives below it,
 /// chosen by the parent based on whether today's entry exists.)
 private struct HomeHeader: View {
     let today: Date
@@ -193,7 +193,7 @@ private struct HomeHeader: View {
                 .frame(width: 92)
                 .accessibilityHidden(true)
 
-            Text("memory journal")
+            Text("keepsake")
                 .font(.kyoto(size: 32))
                 .foregroundStyle(Color.appPrimary)
 
@@ -248,7 +248,7 @@ private struct EmptyHomeView: View {
                 .accessibilityHidden(true)
 
             VStack(spacing: Spacing.xs) {
-                Text("memory journal")
+                Text("keepsake")
                     .font(.kyoto(size: 32))
                     .foregroundStyle(Color.appPrimary)
                 Text(today.journalHeading())

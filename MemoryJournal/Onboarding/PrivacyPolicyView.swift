@@ -24,18 +24,18 @@ struct PrivacyPolicyView: View {
                         .font(.kyoto(size: 13))
                         .foregroundStyle(Color.appBodyText.opacity(0.7))
 
-                    Text("Memory Journal is designed so your memories stay yours. This policy explains, in plain language, what the app does and doesn't do with your information. The short version: everything you write and add stays on your device, and we run no servers that receive your journal.")
+                    Text("keepsake is designed so your memories stay yours. This policy explains, in plain language, what the app does and doesn't do with your information. The short version: everything you write and add stays on your device, and we run no servers that receive your journal.")
                         .font(.kyoto(size: 15))
                         .foregroundStyle(Color.appBodyText)
                         .fixedSize(horizontal: false, vertical: true)
 
                     section(
                         "Your memories stay on your device",
-                        "Everything you create in Memory Journal — your entries, their titles, dates, and any photos or voice notes you attach — is stored only on your device, in the app's private storage, using Apple's on-device database. We do not operate any server that receives, stores, or can read your journal content. Your memories are never uploaded to us or to anyone else by the app."
+                        "Everything you create in keepsake — your entries, their titles, dates, and any photos or voice notes you attach — is stored only on your device, in the app's private storage, using Apple's on-device database. We do not operate any server that receives, stores, or can read your journal content. Your memories are never uploaded to us or to anyone else by the app."
                     )
                     section(
                         "No account, no sign-up",
-                        "Memory Journal has no accounts and no sign-up. You don't give us a name, email, or password to use the app, and we don't create a profile about you."
+                        "keepsake has no accounts and no sign-up. You don't give us a name, email, or password to use the app, and we don't create a profile about you."
                     )
                     section(
                         "We don't track you or use analytics",
@@ -48,7 +48,7 @@ struct PrivacyPolicyView: View {
                     section(
                         "Permissions you control",
                         """
-                        Memory Journal may ask for access to your camera, photo library, and microphone. These are entirely optional and are used only to add media you choose to your own entries:
+                        keepsake may ask for access to your camera, photo library, and microphone. These are entirely optional and are used only to add media you choose to your own entries:
 
                         • Camera — to take a photo for an entry.
                         • Photo library — to add a photo you select to an entry.
@@ -59,7 +59,7 @@ struct PrivacyPolicyView: View {
                     )
                     section(
                         "App Lock and Face ID / Touch ID",
-                        "If you turn on App Lock, Memory Journal asks iOS to confirm it's you (with Face ID, Touch ID, or your device passcode) before opening. This check is performed entirely by iOS. The app never sees, receives, or stores your face, fingerprint, or passcode — that information stays protected by Apple's Secure Enclave."
+                        "If you turn on App Lock, keepsake asks iOS to confirm it's you (with Face ID, Touch ID, or your device passcode) before opening. This check is performed entirely by iOS. The app never sees, receives, or stores your face, fingerprint, or passcode — that information stays protected by Apple's Secure Enclave."
                     )
                     section(
                         "Encryption and device security",
@@ -71,11 +71,11 @@ struct PrivacyPolicyView: View {
                     )
                     section(
                         "iCloud sync",
-                        "Memory Journal does not currently sync your data anywhere; it stays on your device. If we ever add an optional iCloud sync feature, it would be off by default, would use your own private iCloud account (Apple's end-to-end encrypted CloudKit), and still would not send your data to any server of ours. Until you explicitly turn such a feature on, your data stays on this device."
+                        "keepsake does not currently sync your data anywhere; it stays on your device. If we ever add an optional iCloud sync feature, it would be off by default, would use your own private iCloud account (Apple's end-to-end encrypted CloudKit), and still would not send your data to any server of ours. Until you explicitly turn such a feature on, your data stays on this device."
                     )
                     section(
                         "Children's privacy",
-                        "Memory Journal does not collect personal information from anyone, including children. No data is transmitted to us regardless of the user's age."
+                        "keepsake does not collect personal information from anyone, including children. No data is transmitted to us regardless of the user's age."
                     )
                     section(
                         "Changes to this policy",

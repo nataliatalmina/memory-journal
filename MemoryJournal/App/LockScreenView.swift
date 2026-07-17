@@ -25,7 +25,7 @@ struct LockScreenView: View {
                     .frame(width: 110, height: 78)
                     .accessibilityHidden(true)
 
-                Text("memory journal")
+                Text("keepsake")
                     .font(.kyoto(size: 32))
                     .foregroundStyle(Color.appPrimary)
 

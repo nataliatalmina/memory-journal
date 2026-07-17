@@ -34,7 +34,7 @@ struct ViewModeSelectionView: View {
                         .padding(.top, Spacing.xxl)
 
                     VStack(spacing: Spacing.md) {
-                        Text("Memory Journal encourages you to revisit and reflect on memories.")
+                        Text("keepsake encourages you to revisit and reflect on memories.")
                         Text("Select how far back you want to go. You can change this anytime in Settings.")
                     }
                     .font(.kyoto(size: 16))

@@ -44,7 +44,7 @@ struct GIFImage: View {
                         .resizable()
                         .scaledToFit()
                 }
-                // The book is decorative; the "memory journal" wordmark carries the
+                // The book is decorative; the "keepsake" wordmark carries the
                 // meaning, so we hide the image from VoiceOver to avoid noise.
                 .accessibilityHidden(true)
             } else {

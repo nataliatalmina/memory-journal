@@ -35,7 +35,7 @@ struct MediaPermissionsView: View {
                     // Body copy. (Fixed two small typos from the mockup —
                     // "access to your" → "access your", "won'y" → "won't" — while
                     // keeping the verbatim privacy promise.)
-                    Text("You can add photos and voice notes to your entries. Memory Journal will need permission to access your camera, photo library, and microphone, but we won't store any of your media or personal data.")
+                    Text("You can add photos and voice notes to your entries. keepsake will need permission to access your camera, photo library, and microphone, but we won't store any of your media or personal data.")
                         .font(.kyoto(size: 16))
                         .foregroundStyle(Color.appBodyText)
 

@@ -150,7 +150,7 @@ struct SettingsView: View {
     private var aboutSection: some View {
         SettingsSection(title: "about") {
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("memory journal")
+                Text("keepsake")
                     .font(.kyoto(size: 22))
                     .foregroundStyle(Color.appPrimary)
 
@@ -422,7 +422,7 @@ private struct AppLockRow: View {
     private var subtitle: String {
         switch availability {
         case .biometric, .passcodeOnly:
-            return "Require \(BiometricLock.methodName()) to open Memory Journal."
+            return "Require \(BiometricLock.methodName()) to open keepsake."
         case .unavailable:
             return "Set up Face ID, Touch ID, or a device passcode to use App Lock."
         }
