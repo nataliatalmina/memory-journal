@@ -20,6 +20,7 @@
 import Foundation
 import UIKit
 import AVFoundation
+import ImageIO
 
 enum MediaStore {
     // MARK: - Locations
@@ -47,6 +48,29 @@ enum MediaStore {
     /// placeholder when this returns `nil`.
     static func loadPhoto(_ filename: String) -> UIImage? {
         UIImage(contentsOfFile: photoURL(filename).path)
+    }
+
+    /// Load a photo already scaled down to roughly `maxPixelSize` on its longest
+    /// edge, decoding it in one step with ImageIO instead of decoding the full
+    /// 2048px original and shrinking afterwards. Much cheaper in time and memory.
+    ///
+    /// `nonisolated` means "not tied to the main actor": this project defaults to
+    /// MainActor isolation, and this function must be callable from a background
+    /// task so the decode never blocks the UI. It takes a ready-made `URL` (rather
+    /// than a filename) precisely so it doesn't need to touch any main-actor state.
+    nonisolated static func loadPhotoDownsampled(at url: URL, maxPixelSize: CGFloat) -> UIImage? {
+        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, sourceOptions) else { return nil }
+
+        let thumbnailOptions = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,   // respect EXIF rotation
+            kCGImageSourceShouldCacheImmediately: true,         // decode now, on THIS thread
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ] as CFDictionary
+
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions) else { return nil }
+        return UIImage(cgImage: cgImage)
     }
 
     static func audioExists(_ filename: String) -> Bool {

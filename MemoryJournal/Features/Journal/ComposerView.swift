@@ -454,16 +454,41 @@ private struct EditablePhotoThumbnail: View {
     let filename: String
     let onRemove: () -> Void
 
+    // Decoded on a background task rather than inside `body`. Decoding inline ran
+    // a full-size JPEG decode on the main thread while this composer sheet was
+    // animating in, which made the presentation stutter. Because the tile already
+    // has a fixed aspect ratio and a fill behind it, the loading state can simply
+    // show nothing — no placeholder flash, no layout shift.
+    @State private var state: LoadState = .loading
+
+    private enum LoadState {
+        case loading
+        case loaded(UIImage)
+        case missing
+    }
+
     var body: some View {
         RoundedRectangle(cornerRadius: 6)
             .fill(Color.appSecondary.opacity(0.2))
             .aspectRatio(110.0 / 140.0, contentMode: .fit)
             .overlay {
-                if let image = MediaStore.loadPhoto(filename) {
+                switch state {
+                case .loading:
+                    EmptyView()   // the rounded-rect fill above shows through
+                case .loaded(let image):
                     Image(uiImage: image).resizable().scaledToFill()
-                } else {
+                case .missing:
                     Image(systemName: "photo").font(.title2).foregroundStyle(Color.appSecondary)
                 }
+            }
+            // Only a small tile is shown, so decode to a correspondingly small
+            // size instead of the 2048px original.
+            .task(id: filename) {
+                let url = MediaStore.photoURL(filename)
+                let decoded = await Task.detached(priority: .userInitiated) {
+                    MediaStore.loadPhotoDownsampled(at: url, maxPixelSize: 400)
+                }.value
+                state = decoded.map(LoadState.loaded) ?? .missing
             }
             .clipShape(.rect(cornerRadius: 6))
             .overlay(alignment: .topTrailing) {

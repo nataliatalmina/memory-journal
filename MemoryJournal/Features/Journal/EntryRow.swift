@@ -86,13 +86,32 @@ struct EntryContent: View {
 struct PhotoThumbnail: View {
     let filename: String
 
+    // Decoded on a background task, not inside `body`. These rows re-evaluate
+    // whenever the Journal screen's state changes — including the moment a sheet
+    // is presented — so a synchronous full-size decode here stalled the main
+    // thread and made those sheet animations stutter. Moving it off the main
+    // thread also keeps list scrolling smooth. The frame below is fixed, so
+    // there's no layout shift while the photo decodes.
+    @State private var state: LoadState = .loading
+
+    private enum LoadState {
+        case loading
+        case loaded(UIImage)
+        case missing
+    }
+
     var body: some View {
         Group {
-            if let image = MediaStore.loadPhoto(filename) {
+            switch state {
+            case .loading:
+                Color.appSecondary.opacity(0.12)
+
+            case .loaded(let image):
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
-            } else {
+
+            case .missing:
                 ZStack {
                     Color.appSecondary.opacity(0.25)
                     Image(systemName: "photo")
@@ -100,6 +119,15 @@ struct PhotoThumbnail: View {
                         .foregroundStyle(Color.appSecondary)
                 }
             }
+        }
+        // Only a 100×150 tile is drawn, so decode to roughly that size rather
+        // than the 2048px original.
+        .task(id: filename) {
+            let url = MediaStore.photoURL(filename)
+            let decoded = await Task.detached(priority: .userInitiated) {
+                MediaStore.loadPhotoDownsampled(at: url, maxPixelSize: 400)
+            }.value
+            state = decoded.map(LoadState.loaded) ?? .missing
         }
         .frame(width: 100, height: 150)
         .clipShape(.rect(cornerRadius: 6))   // small radius (design is square; rounded reads friendlier)

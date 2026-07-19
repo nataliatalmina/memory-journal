@@ -83,7 +83,7 @@ struct PrivacyPolicyView: View {
                     )
                     section(
                         "Contact",
-                        "Questions about your privacy or this policy? Email us at hello@memoryjournalapp.com."
+                        "Questions about your privacy or this policy? Email us at hello@keepsakejournal.app."
                     )
                 }
                 .padding(Spacing.lg)

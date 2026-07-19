@@ -116,16 +116,39 @@ struct EntryReadContent: View {
 }
 
 /// A full-width photo in the detail view (the row uses a small thumbnail instead).
+///
+/// The photo is decoded on a BACKGROUND task, not inside `body`. Decoding it
+/// inline (the previous approach) ran a full-size JPEG decode on the main thread
+/// every time the view's body was evaluated — including while this view's sheet
+/// was animating in, which blocked the animation and made it stutter.
 private struct PhotoView: View {
     let filename: String
 
+    @State private var state: LoadState = .loading
+
+    /// Three distinct states, so a photo that's still decoding doesn't show the
+    /// same "missing photo" placeholder as one whose file is genuinely absent.
+    private enum LoadState {
+        case loading
+        case loaded(UIImage)
+        case missing
+    }
+
     var body: some View {
         Group {
-            if let image = MediaStore.loadPhoto(filename) {
+            switch state {
+            case .loading:
+                // A quiet placeholder while decoding. Same height as the missing
+                // case so the layout stays stable until the real photo arrives.
+                Color.appSecondary.opacity(0.12)
+                    .frame(height: 200)
+
+            case .loaded(let image):
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFit()
-            } else {
+
+            case .missing:
                 ZStack {
                     Color.appSecondary.opacity(0.25)
                     Image(systemName: "photo").font(.largeTitle).foregroundStyle(Color.appSecondary)
@@ -134,5 +157,19 @@ private struct PhotoView: View {
             }
         }
         .clipShape(.rect(cornerRadius: CornerRadius.card))
+        // `.task(id:)` runs when the view appears and again if the filename
+        // changes — the same pattern the voice-note waveform already uses.
+        .task(id: filename) { await load() }
+    }
+
+    private func load() async {
+        // Build the URL here (cheap, main-actor), then hand it to a detached task
+        // so the actual file read + decode happens off the main thread.
+        let url = MediaStore.photoURL(filename)
+        let decoded = await Task.detached(priority: .userInitiated) {
+            MediaStore.loadPhotoDownsampled(at: url, maxPixelSize: 1600)
+        }.value
+
+        state = decoded.map(LoadState.loaded) ?? .missing
     }
 }
