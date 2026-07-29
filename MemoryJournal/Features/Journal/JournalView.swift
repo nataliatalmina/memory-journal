@@ -35,7 +35,9 @@ struct JournalView: View {
     // "Delete this memory" button. A sheet floats above the bar, keeping it reachable.
     @State private var detailEntry: Entry?
 
-    private var today: Date { Calendar.current.startOfDay(for: .now) }
+    // Today as a canonical entry date (see Shared/JournalDay.swift). Flips at local
+    // midnight, but encoded so it compares exactly against stored entries.
+    private var today: Date { .journalToday }
 
     private var targetDates: Set<Date> {
         Set(DateLookup().targetDates(matching: today,
@@ -56,13 +58,21 @@ struct JournalView: View {
 
     private var isEmpty: Bool { todayEntry == nil && lookbackEntries.isEmpty }
 
+    /// True once the user has written ANY entry, anywhere in the journal — not just
+    /// inside today's look-back window. The empty state uses this to tell the two
+    /// cases apart: a brand-new journal vs. a journal whose entries all sit outside
+    /// the window (e.g. one written a week ago in Five-Year mode).
+    private var hasAnyEntries: Bool { !allEntries.isEmpty }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.appBackground.ignoresSafeArea()
 
                 if isEmpty {
-                    EmptyHomeView(today: today, onCreate: openCreate)
+                    EmptyHomeView(today: today,
+                                  hasAnyEntries: hasAnyEntries,
+                                  onCreate: openCreate)
                 } else {
                     populatedHome
                 }
@@ -231,11 +241,27 @@ private struct TodayEntryBlock: View {
     }
 }
 
-/// Empty state: centred logo, wordmark, date, the "no entries yet" copy, and the
-/// Create button.
+/// Empty state: centred logo, wordmark, date, an invitation to write, and the
+/// Create button. The invitation has two wordings — see `message`.
 private struct EmptyHomeView: View {
     let today: Date
+    /// Whether the journal contains any entry at all (see `JournalView.hasAnyEntries`).
+    let hasAnyEntries: Bool
     let onCreate: () -> Void
+
+    /// Two lines of copy, picked so the wording is always factually true. Saying
+    /// "you haven't made any entries yet" to someone who wrote one last week (just
+    /// outside the look-back window) would be wrong, so that case gets today-specific
+    /// wording instead.
+    private var message: (headline: String, invitation: String) {
+        if hasAnyEntries {
+            ("You haven't written anything today.",
+             "Write down a memory so you can revisit it later.")
+        } else {
+            ("You haven't made any entries yet.",
+             "Get started by capturing your first memory.")
+        }
+    }
 
     var body: some View {
         VStack(spacing: Spacing.lg) {
@@ -257,8 +283,8 @@ private struct EmptyHomeView: View {
             }
 
             VStack(spacing: Spacing.xs) {
-                Text("You haven't made any entries yet.")
-                Text("Get started by capturing your first memory.")
+                Text(message.headline)
+                Text(message.invitation)
             }
             .font(.kyoto(size: 16))
             .foregroundStyle(Color.appBodyText)

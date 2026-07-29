@@ -19,9 +19,15 @@ extension Date {
     // reuse it. `setLocalizedDateFormatFromTemplate` lets the user's locale pick
     // the right field order (e.g. "june 6 2026" in the US) while we ask for
     // day + full month + year.
+    //
+    // The time zone MUST be UTC: entry dates are UTC midnights (see
+    // Shared/JournalDay.swift), so a formatter left on the device's zone would
+    // render them a day early anywhere west of UTC — 20 July would display as
+    // "19 july 2026" in California.
     private static let headingFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = .current
+        formatter.timeZone = .gmt
         formatter.setLocalizedDateFormatFromTemplate("d MMMM yyyy")
         return formatter
     }()
@@ -36,6 +42,7 @@ extension Date {
     private static let monthYearFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = .current
+        formatter.timeZone = .gmt      // see headingFormatter — entry dates are UTC midnights
         formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
         return formatter
     }()

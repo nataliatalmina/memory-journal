@@ -21,10 +21,14 @@ final class Entry {
     // entries. A fresh `UUID` (a random 128-bit identifier) guarantees that.
     @Attribute(.unique) var id: UUID
 
-    /// The calendar date this entry belongs to, **normalised to start-of-day**
-    /// so that same-date matching is exact (every entry written on 15 Aug 2026
-    /// stores the *same* instant — midnight that day — regardless of the time it
-    /// was actually written). See `init` for how and in which time zone.
+    /// The calendar date this entry belongs to, encoded canonically as **UTC
+    /// midnight of that day** — see `Shared/JournalDay.swift` for why. Every entry
+    /// written on 15 Aug 2026 stores the *same* instant regardless of the time it
+    /// was written OR the time zone the user was in, so same-date matching is
+    /// exact and survives travel.
+    ///
+    /// Compare it only against other canonical days (`Date.journalToday`,
+    /// `journalDay(in:)`, `Calendar.journal`) — never `Calendar.current`.
     var date: Date
 
     /// Optional short title, e.g. "Day at the park". `String?` means "a String
@@ -59,15 +63,14 @@ final class Entry {
          createdAt: Date = .now) {
         self.id = UUID()
 
-        // Normalise to the *first moment of the day* in the user's current
-        // calendar and time zone (LOCAL, deliberately not UTC): an entry belongs
-        // to the wall-clock date the user experienced. `startOfDay(for:)` is
-        // DST-safe — it returns the real first instant of the day even on days
-        // where that isn't exactly 00:00.
+        // Encode the day canonically. `calendar` (LOCAL by default) decides WHICH
+        // wall-clock day the user lived — an entry written at 23:40 belongs to that
+        // evening's date, not the next morning's — and `journalDay(in:)` then stores
+        // that day as UTC midnight so it can't drift when the user travels.
         //
         // The `calendar` parameter exists so seeding and tests can pass a fixed
         // calendar; day-to-day app code just uses the default `.current`.
-        self.date = calendar.startOfDay(for: date)
+        self.date = date.journalDay(in: calendar)
 
         self.title = title
         self.body = body

@@ -7,8 +7,10 @@
 //  midnight, with no persistence and no background job.
 //
 //  How it works:
-//   1. "The day" is the LOCAL calendar day (start-of-day in Calendar.current —
-//      the same basis as Entry dates), so it flips at local midnight, DST-safe.
+//   1. "The day" is the user's LOCAL calendar day, encoded canonically the same
+//      way Entry dates are (`.journalToday` — see Shared/JournalDay.swift). It
+//      still flips at local midnight and is DST-safe, but because the encoding is
+//      zone-independent the rotation no longer jumps when the user travels.
 //   2. We turn that day into an integer "day number" (days since a fixed anchor).
 //      Same day → same number; each day → +1.
 //   3. That number seeds a small deterministic RNG (SplitMix64) and we SHUFFLE
@@ -23,10 +25,10 @@ import Foundation
 enum DailyPrompts {
     /// The prompts to show for `date` (default: now), drawn from `list`.
     /// Returns up to `count` distinct prompts (fewer only if the list is smaller).
-    static func selection(for date: Date = .now,
+    static func selection(for date: Date = .journalToday,
                           from list: [String] = PromptLibrary.all,
                           count: Int = 5,
-                          calendar: Calendar = .current) -> [String] {
+                          calendar: Calendar = .journal) -> [String] {
         guard !list.isEmpty else { return [] }
         let k = min(count, list.count)               // guard: list shorter than `count`
 
@@ -35,9 +37,9 @@ enum DailyPrompts {
         return order.prefix(k).map { list[$0] }
     }
 
-    /// Days since a fixed anchor, counted in LOCAL calendar days (not raw seconds,
-    /// so DST never shifts it). Stable for a whole local day; +1 the next day.
-    static func dayNumber(for date: Date, calendar: Calendar = .current) -> UInt64 {
+    /// Days since a fixed anchor, counted in whole calendar days (not raw seconds,
+    /// so DST never shifts it). Stable for a whole day; +1 the next day.
+    static func dayNumber(for date: Date, calendar: Calendar = .journal) -> UInt64 {
         let anchor = calendar.startOfDay(for: Date(timeIntervalSinceReferenceDate: 0))
         let day = calendar.startOfDay(for: date)
         let days = calendar.dateComponents([.day], from: anchor, to: day).day ?? 0

@@ -94,24 +94,31 @@ struct DateLookupDevView: View {
         .onAppear(perform: runQuery)
     }
 
+    /// The DatePicker hands back a raw local instant; canonicalise it before it
+    /// reaches DateLookup, exactly as the real screens do with `.journalToday`.
+    private var canonicalTarget: Date { targetDate.journalDay() }
+
     /// The dates the current settings will search for (shown in the UI).
     private var searchedDates: [Date] {
-        DateLookup().targetDates(matching: targetDate, mode: mode, count: count)
+        DateLookup().targetDates(matching: canonicalTarget, mode: mode, count: count)
     }
 
     private func runQuery() {
         let lookup = DateLookup()
-        results = (try? lookup.matchingEntries(matching: targetDate, mode: mode, count: count, in: context)) ?? []
+        results = (try? lookup.matchingEntries(matching: canonicalTarget, mode: mode, count: count, in: context)) ?? []
 
         // Also dump to the console, as requested.
-        print("— DateLookup [\(mode.rawValue)] N=\(count) target \(formatted(targetDate)) → \(results.count) match(es):")
+        print("— DateLookup [\(mode.rawValue)] N=\(count) target \(formatted(canonicalTarget)) → \(results.count) match(es):")
         for entry in results {
             print("    • \(formatted(entry.date))  \(entry.title ?? "")")
         }
     }
 
+    /// Reuses the app's own heading formatter, which is UTC-pinned — entry dates
+    /// are UTC midnights, so the device's zone would render them a day early west
+    /// of UTC.
     private func formatted(_ date: Date) -> String {
-        date.formatted(date: .abbreviated, time: .omitted)
+        date.journalHeading()
     }
 }
 

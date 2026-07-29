@@ -47,7 +47,9 @@ struct DateLookup {
     var calendar: Calendar
     var outOfRangeRule: OutOfRangeDayRule
 
-    init(calendar: Calendar = .current, outOfRangeRule: OutOfRangeDayRule = DateLookup.defaultRule) {
+    // Defaults to `.journal` (UTC-pinned) so the dates this produces are canonical
+    // entry dates and compare exactly against `Entry.date`. Tests pass their own.
+    init(calendar: Calendar = .journal, outOfRangeRule: OutOfRangeDayRule = DateLookup.defaultRule) {
         self.calendar = calendar
         self.outOfRangeRule = outOfRangeRule
     }

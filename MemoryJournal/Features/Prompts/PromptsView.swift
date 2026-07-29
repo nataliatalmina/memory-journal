@@ -33,12 +33,14 @@ struct PromptsView: View {
     @State private var dayOffset = 0
     #endif
 
-    private var today: Date { Calendar.current.startOfDay(for: .now) }
+    private var today: Date { .journalToday }
 
     /// The date used to *seed the prompt selection* (today, plus a DEBUG offset).
     private var seedDate: Date {
         #if DEBUG
-        return Calendar.current.date(byAdding: .day, value: dayOffset, to: today) ?? today
+        // `.journal`, not `.current` — `today` is a canonical (UTC-midnight) date,
+        // so day arithmetic on it has to use the same calendar to stay canonical.
+        return Calendar.journal.date(byAdding: .day, value: dayOffset, to: today) ?? today
         #else
         return today
         #endif

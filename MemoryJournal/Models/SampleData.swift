@@ -39,7 +39,7 @@ enum SampleData {
     /// Insert an entry dated TODAY (if there isn't one), so we can preview the
     /// "today's entry in the header + Edit memory" state. Matches the Figma copy.
     static func seedTodayEntry(_ context: ModelContext) {
-        let today = Calendar.current.startOfDay(for: .now)
+        let today = Date.journalToday
         let all = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
         guard !all.contains(where: { $0.date == today }) else { return }
         writeSampleMedia()
@@ -48,7 +48,8 @@ enum SampleData {
             title: "Day at the park",
             body: "Today I went to the park. It was so wonderful to just sit and read and feel the sunshine on my skin. Not rushing anywhere. I wish every day was like this.",
             photoFilenames: ["sample-ocean.jpg", "sample-forest.jpg", "sample-sunset.jpg"],
-            voiceNoteFilename: "sample-voice.m4a"
+            voiceNoteFilename: "sample-voice.m4a",
+            calendar: .journal      // `today` is already canonical — see makeEntries()
         ))
         try? context.save()
     }
@@ -60,8 +61,9 @@ enum SampleData {
     /// Each window includes a photo entry, a voice-note entry, and a plain one,
     /// plus titled and untitled examples.
     static func makeEntries() -> [Entry] {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: .now)
+        // Canonical calendar + today, so seeded dates match what the app queries for.
+        let calendar = Calendar.journal
+        let today = Date.journalToday
 
         func yearsAgo(_ n: Int) -> Date { calendar.date(byAdding: .year, value: -n, to: today) ?? today }
         func monthsAgo(_ n: Int) -> Date { calendar.date(byAdding: .month, value: -n, to: today) ?? today }
@@ -71,22 +73,26 @@ enum SampleData {
 
         let longBody = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
 
+        // Every date above is ALREADY canonical (built with `.journal`), so each
+        // Entry must be told to encode with `.journal` too. Left on the default
+        // `.current` it would read those UTC midnights as local wall-clock times
+        // and file them a day early anywhere west of UTC.
         return [
             // ── YEAR-mode window (same month/day as today). Year −3 missing = gap.
-            Entry(date: yearsAgo(1), title: "Quiet morning", body: "Coffee on the balcony, watching the street slowly wake up.", photoFilenames: ["sample-ocean.jpg"]),
-            Entry(date: yearsAgo(2), body: longBody),
-            Entry(date: yearsAgo(4), body: "A short voice memo from a long walk.", voiceNoteFilename: "sample-voice.m4a"),
+            Entry(date: yearsAgo(1), title: "Quiet morning", body: "Coffee on the balcony, watching the street slowly wake up.", photoFilenames: ["sample-ocean.jpg"], calendar: .journal),
+            Entry(date: yearsAgo(2), body: longBody, calendar: .journal),
+            Entry(date: yearsAgo(4), body: "A short voice memo from a long walk.", voiceNoteFilename: "sample-voice.m4a", calendar: .journal),
 
             // ── MONTH-mode window (same day-of-month as today). Month −3 missing = gap.
-            Entry(date: monthsAgo(1), title: "Concert", body: "Front-row seats — ears still ringing the next day.", photoFilenames: ["sample-sunset.jpg"]),
-            Entry(date: monthsAgo(2), body: longBody),
-            Entry(date: monthsAgo(4), body: "Recorded the rain on the window.", voiceNoteFilename: "sample-voice.m4a"),
+            Entry(date: monthsAgo(1), title: "Concert", body: "Front-row seats — ears still ringing the next day.", photoFilenames: ["sample-sunset.jpg"], calendar: .journal),
+            Entry(date: monthsAgo(2), body: longBody, calendar: .journal),
+            Entry(date: monthsAgo(4), body: "Recorded the rain on the window.", voiceNoteFilename: "sample-voice.m4a", calendar: .journal),
 
             // ── Edge-case fodder + noise (mainly for the DateLookup dev tab).
-            Entry(date: fixed(2024, 2, 29), title: "Leap day", body: "An extra day this year."),
-            Entry(date: fixed(2026, 1, 31), title: "End of January", body: "New month tomorrow."),
-            Entry(date: fixed(2026, 3, 31), title: "End of March", body: "Spring is here."),
-            Entry(date: fixed(2025, 12, 25), title: "Holidays", body: "Family dinner."),
+            Entry(date: fixed(2024, 2, 29), title: "Leap day", body: "An extra day this year.", calendar: .journal),
+            Entry(date: fixed(2026, 1, 31), title: "End of January", body: "New month tomorrow.", calendar: .journal),
+            Entry(date: fixed(2026, 3, 31), title: "End of March", body: "Spring is here.", calendar: .journal),
+            Entry(date: fixed(2025, 12, 25), title: "Holidays", body: "Family dinner.", calendar: .journal),
         ]
     }
 

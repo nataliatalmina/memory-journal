@@ -23,10 +23,11 @@ import SwiftUI
 import SwiftData
 
 struct CalendarView: View {
-    // One local calendar for the whole screen, shared with `Entry.date`'s
-    // normalisation (Phase 1): same locale, same time zone, so a tapped grid day
-    // compares exactly against a stored entry's start-of-day date.
-    private let calendar = Calendar.current
+    // One calendar for the whole screen, the same one `Entry.date` is encoded with
+    // (UTC-pinned — see Shared/JournalDay.swift), so a tapped grid day compares
+    // exactly against a stored entry's date no matter where the user is. It's still
+    // derived from `Calendar.current`, so the locale's first weekday still applies.
+    private let calendar = Calendar.journal
 
     // `@Query` fetches from SwiftData and re-runs whenever the store changes, so the
     // entry dots and the shown entry stay live (e.g. if an entry is added on Home).
@@ -42,8 +43,12 @@ struct CalendarView: View {
     init() {
         // Start on the current month. (`@State` needs an initial value; we build it
         // here from "now" so the calendar opens on this month.)
-        let cal = Calendar.current
-        _displayedMonth = State(initialValue: CalendarMonth(containing: .now, calendar: cal).firstDay)
+        // `.journalToday` rather than `.now`: the month must be derived from the
+        // user's LOCAL day, then read in the journal calendar. Passing `.now`
+        // straight to a UTC calendar would show the previous month for the first
+        // few hours of the 1st anywhere west of UTC.
+        _displayedMonth = State(initialValue: CalendarMonth(containing: .journalToday,
+                                                            calendar: .journal).firstDay)
     }
 
     // The grid maths for the displayed month (pure helper, see CalendarMonth.swift).
@@ -53,7 +58,7 @@ struct CalendarView: View {
 
     // First day of the *current* real month — the forward-navigation ceiling.
     private var currentMonthStart: Date {
-        CalendarMonth(containing: .now, calendar: calendar).firstDay
+        CalendarMonth(containing: .journalToday, calendar: calendar).firstDay
     }
 
     // Can we page forward? Only while we're before the current month.
@@ -224,8 +229,9 @@ struct CalendarView: View {
     // MARK: - Actions
 
     private func select(_ date: Date) {
-        // Normalise to start-of-day (defensive — grid dates already are) so it
-        // matches `Entry.date` exactly.
+        // Defensive no-op — the grid already produces canonical entry dates, since
+        // it's laid out with the journal calendar — but it keeps the guarantee local
+        // to this function rather than relying on the grid.
         selectedDate = calendar.startOfDay(for: date)
     }
 
@@ -245,7 +251,7 @@ struct CalendarView: View {
     private func applyDebugLaunchArguments() {
         let args = CommandLine.arguments
         if args.contains("-calendarSelectToday") {
-            selectedDate = calendar.startOfDay(for: .now)
+            selectedDate = .journalToday
         }
         if args.contains("-calendarSelectEntry") {
             Task { @MainActor in

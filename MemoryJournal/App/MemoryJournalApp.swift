@@ -41,6 +41,11 @@ struct MemoryJournalApp: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
 
+        // Repair entry dates written under the old, time-zone-dependent encoding
+        // (see Services/EntryDateMigration.swift). Runs once, before anything reads
+        // the store, and is a no-op on every launch after that.
+        EntryDateMigration.runIfNeeded(container.mainContext)
+
         #if DEBUG
         // Put some sample entries in place (only when the store is empty) so the
         // dev view has something to show. Compiled out of release builds.

@@ -119,15 +119,18 @@ struct DateLookupTests {
         let justAfterMidnight = cal.date(from: DateComponents(year: 2025, month: 3, day: 9, hour: 0, minute: 30))!
         let lateEvening       = cal.date(from: DateComponents(year: 2025, month: 3, day: 9, hour: 23, minute: 30))!
         // Despite the clocks jumping forward mid-day, both belong to the same
-        // local calendar day and must normalise to the same instant.
-        #expect(cal.startOfDay(for: justAfterMidnight) == cal.startOfDay(for: lateEvening))
+        // local calendar day and must encode to the same instant.
+        #expect(Entry(date: justAfterMidnight, body: "a", calendar: cal).date
+                == Entry(date: lateEvening, body: "b", calendar: cal).date)
     }
 
-    @Test func entryStoresStartOfDayInGivenCalendar() {
+    @Test func entryStoresTheCanonicalDayOfTheGivenCalendar() {
+        // The local calendar decides WHICH day; the stored value is that day as a
+        // UTC midnight (see Shared/JournalDay.swift and JournalDayTests).
         let cal = calendar("America/New_York")
         let lateNight = cal.date(from: DateComponents(year: 2026, month: 8, day: 15, hour: 22, minute: 45))!
         let entry = Entry(date: lateNight, body: "late night", calendar: cal)
-        #expect(entry.date == cal.startOfDay(for: lateNight))
+        #expect(entry.date == Calendar.journal.date(from: DateComponents(year: 2026, month: 8, day: 15))!)
     }
 
     // MARK: - Integration: the actual database fetch (in-memory store)
@@ -138,24 +141,25 @@ struct DateLookupTests {
         let container = try ModelContainer(for: Entry.self, configurations: config)
         let context = ModelContext(container)
 
-        let cal = Calendar.current   // Entry + DateLookup must agree → use the same calendar
+        // Canonical journal days (UTC midnights) — what `Entry.date` now holds and
+        // what DateLookup searches for, whatever zone the test machine is in.
         func d(_ y: Int, _ m: Int, _ day: Int) -> Date {
-            cal.date(from: DateComponents(year: y, month: m, day: day))!
+            Calendar.journal.date(from: DateComponents(year: y, month: m, day: day))!
         }
 
         // Aug 15 across years (2023 missing = gap) + unrelated noise.
         for date in [d(2026, 8, 15), d(2025, 8, 15), d(2024, 8, 15), d(2022, 8, 15),
                      d(2026, 8, 3), d(2025, 1, 1)] {
-            context.insert(Entry(date: date, body: "x"))
+            context.insert(Entry(date: date, body: "x", calendar: .journal))
         }
         try context.save()
 
         let matches = try DateLookup()
             .matchingEntries(matching: d(2026, 8, 15), mode: .years, count: 5, in: context)
 
-        #expect(matches.map(\.date) == [cal.startOfDay(for: d(2026, 8, 15)),
-                                        cal.startOfDay(for: d(2025, 8, 15)),
-                                        cal.startOfDay(for: d(2024, 8, 15)),
-                                        cal.startOfDay(for: d(2022, 8, 15))])
+        #expect(matches.map(\.date) == [d(2026, 8, 15),
+                                        d(2025, 8, 15),
+                                        d(2024, 8, 15),
+                                        d(2022, 8, 15)])
     }
 }

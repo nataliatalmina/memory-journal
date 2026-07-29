@@ -27,4 +27,9 @@ enum PreferenceKey {
     /// Touch ID / passcode to open the app. Defaults to `false` (off). Read by
     /// `AppLock` to decide whether to lock on launch and when backgrounded.
     static let appLockEnabled = "appLockEnabled"
+
+    /// Which entry-date storage format the local store has been migrated to (see
+    /// `EntryDateMigration`). `0`/absent means "still the original time-zone
+    /// dependent encoding"; the migration bumps it once it has repaired the store.
+    static let entryDateStorageVersion = "entryDateStorageVersion"
 }

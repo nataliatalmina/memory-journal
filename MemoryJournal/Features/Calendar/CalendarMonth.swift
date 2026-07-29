@@ -7,11 +7,12 @@
 //  — so it's trivial to unit-test with a fixed calendar (mirrors how
 //  `Services/DateLookup.swift` keeps its date arithmetic separate from the UI).
 //
-//  Time zone: we use the caller's `Calendar` (the app passes `.current`), so the
-//  grid, the selected day, and `Entry.date` all share the SAME local calendar and
-//  time zone. That's the Phase 1 normalisation rule — every date here is a
-//  start-of-day instant in the user's local time zone — so comparing a tapped grid
-//  day against a stored entry's date is exact.
+//  Time zone: we use the caller's `Calendar`, which defaults to `.journal` — the
+//  UTC-pinned calendar that `Entry.date` is encoded with (see
+//  Shared/JournalDay.swift). The grid, the selected day, and stored entries
+//  therefore share one encoding, so comparing a tapped grid day against an entry's
+//  date is exact and doesn't drift when the user travels. `.journal` is derived
+//  from `Calendar.current`, so the locale's first weekday still applies below.
 //
 
 import Foundation
@@ -26,7 +27,7 @@ struct CalendarMonth {
     let firstDay: Date
 
     /// Build the month that *contains* the given date (any day in the month works).
-    init(containing date: Date, calendar: Calendar = .current) {
+    init(containing date: Date, calendar: Calendar = .journal) {
         self.calendar = calendar
         // Keep only year+month, drop the day/time → the 1st of that month at 00:00.
         let comps = calendar.dateComponents([.year, .month], from: date)

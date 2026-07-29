@@ -31,6 +31,9 @@ struct ComposerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(VoicePlayer.self) private var player
 
+    /// The day this entry belongs to, as a CANONICAL journal date (`.journalToday`
+    /// or another `journalDay(in:)` result — see Shared/JournalDay.swift). Callers
+    /// must not pass a raw `.now`.
     let date: Date
     var existingEntry: Entry?
     /// When opened from the Prompts screen, the chosen prompt to seed the title.
@@ -388,12 +391,15 @@ struct ComposerView: View {
             if let appliedPrompt { entry.promptUsed = appliedPrompt }
             entry.modifiedAt = .now
         } else {
+            // `.journal`, because `date` is already a canonical journal day. Encoding
+            // it again with the local calendar would shift it a day west of UTC.
             context.insert(Entry(date: date,
                                  title: cleaned.title,
                                  body: cleaned.body,
                                  photoFilenames: finalPhotos,
                                  voiceNoteFilename: finalVoice,
-                                 promptUsed: appliedPrompt))
+                                 promptUsed: appliedPrompt,
+                                 calendar: .journal))
         }
         try? context.save()
 
@@ -508,7 +514,7 @@ private struct EditablePhotoThumbnail: View {
 }
 
 #Preview {
-    ComposerView(date: .now)
+    ComposerView(date: .journalToday)
         .modelContainer(for: Entry.self, inMemory: true)
         .environment(VoicePlayer())
 }
