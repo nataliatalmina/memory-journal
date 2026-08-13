@@ -27,5 +27,16 @@
 	     won't ask the export-compliance question on every App Store upload. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Light appearance only. The design system (DesignSystem/Color+Theme.swift)
+	     is a fixed light palette with no dark variants — the app already renders
+	     light on a dark-mode device. Without this key, only the SYSTEM-drawn
+	     surfaces (alerts, UIKit pickers, share sheets) followed the device into
+	     dark mode, which made the teal `.tint(.appPrimary)` on ComposerView's
+	     "Access Needed" alerts unreadable: #005363 on a near-black alert is about
+	     1.6:1 contrast. Declaring the app light-only keeps those surfaces light,
+	     where the same teal is ~8.7:1. Remove this key only if a full dark palette
+	     is ever built. -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 </dict>
 </plist>
