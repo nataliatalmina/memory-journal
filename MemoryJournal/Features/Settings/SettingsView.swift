@@ -320,6 +320,10 @@ private struct ChipRow: View {
 /// not-yet-asked permission shows the system prompt; tapping an already-decided
 /// one deep-links to the app's page in the Settings app (iOS only prompts once,
 /// so that's the only way to change it afterwards).
+///
+/// Wording is deliberately neutral ("Not set", not "Enable") — see the note in
+/// `MediaPermissionsView` about guideline 5.1.1(iv). There is no Photo Library
+/// row because `PhotosPicker` needs no permission.
 private struct PermissionRow: View {
     let capability: MediaCapability
     let status: PermissionStatus
@@ -357,9 +361,8 @@ private struct PermissionRow: View {
 
     private var name: String {
         switch capability {
-        case .camera:       "Camera"
-        case .photoLibrary: "Photo Library"
-        case .microphone:   "Microphone"
+        case .camera:     "Camera"
+        case .microphone: "Microphone"
         }
     }
 
@@ -368,7 +371,7 @@ private struct PermissionRow: View {
         switch status {
         case .granted:       "On"
         case .denied:        "Off"
-        case .notDetermined: "Enable"
+        case .notDetermined: "Not set"
         }
     }
 

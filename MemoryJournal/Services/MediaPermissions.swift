@@ -8,9 +8,14 @@
 //  onboarding copy promises we don't store your media or personal data.)
 //
 //  The three underlying APIs:
-//   • Camera        → AVCaptureDevice  (AVFoundation)
-//   • Photo library → PHPhotoLibrary   (Photos)
-//   • Microphone    → AVAudioApplication (AVFoundation, iOS 17+ API)
+//   • Camera     → AVCaptureDevice  (AVFoundation)
+//   • Microphone → AVAudioApplication (AVFoundation, iOS 17+ API)
+//
+//  There is deliberately NO photo-library capability here. Photos are attached
+//  with `PhotosPicker`, which runs out-of-process and hands back only the images
+//  the user picked, so it needs no authorization at all. The app used to request
+//  `PHPhotoLibrary` access it never actually used — that was removed after App
+//  Review flagged the onboarding permission screen under guideline 5.1.1(iv).
 //
 //  Each iOS permission has the same lifecycle: it starts "not determined", the
 //  first request shows the system prompt, and the user's answer ("granted" or
@@ -20,12 +25,10 @@
 //
 
 import AVFoundation
-import Photos
 
 /// The three capabilities we can request.
 enum MediaCapability: CaseIterable, Identifiable {
     case camera
-    case photoLibrary
     case microphone
 
     var id: Self { self }
@@ -49,9 +52,6 @@ enum MediaPermissions {
         switch capability {
         case .camera:
             return map(AVCaptureDevice.authorizationStatus(for: .video))
-        case .photoLibrary:
-            // `.readWrite` because adding photos to entries needs full access.
-            return map(PHPhotoLibrary.authorizationStatus(for: .readWrite))
         case .microphone:
             return map(AVAudioApplication.shared.recordPermission)
         }
@@ -65,10 +65,6 @@ enum MediaPermissions {
         case .camera:
             let granted = await AVCaptureDevice.requestAccess(for: .video)
             return granted ? .granted : .denied
-
-        case .photoLibrary:
-            let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
-            return map(status)
 
         case .microphone:
             // `requestRecordPermission` uses a completion handler; we wrap it in
@@ -89,14 +85,6 @@ enum MediaPermissions {
         case .authorized:    .granted
         case .notDetermined: .notDetermined
         default:             .denied   // .denied, .restricted
-        }
-    }
-
-    private static func map(_ status: PHAuthorizationStatus) -> PermissionStatus {
-        switch status {
-        case .authorized, .limited: .granted
-        case .notDetermined:        .notDetermined
-        default:                    .denied   // .denied, .restricted
         }
     }
 
