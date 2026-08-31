@@ -308,7 +308,10 @@ struct ComposerView: View {
             case .notDetermined:
                 if await MediaPermissions.request(.camera) == .granted { showCamera = true }
                 else { cameraDeniedAlert = true }
-            case .denied: cameraDeniedAlert = true
+            // `.limited` is a photo-library-only answer ("Selected Photos"); the
+            // camera can never return it. Handled alongside `.denied` so the
+            // switch stays exhaustive without pretending it's reachable.
+            case .denied, .limited: cameraDeniedAlert = true
             }
         }
     }
@@ -346,7 +349,8 @@ struct ComposerView: View {
             case .notDetermined:
                 if await MediaPermissions.request(.microphone) == .granted { startRecording() }
                 else { micDeniedAlert = true }
-            case .denied: micDeniedAlert = true
+            // As above: the microphone can't come back `.limited`.
+            case .denied, .limited: micDeniedAlert = true
             }
         }
     }

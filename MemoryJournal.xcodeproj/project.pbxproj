@@ -377,6 +377,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "keepsake uses the camera only to add photos to your journal entries. Your photos stay on this device — keepsake never uploads or shares them.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "keepsake uses Face ID to lock your journal so only you can open it. Authentication happens on this device; we never store or share your biometric data.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "keepsake uses the microphone only to record voice notes for your journal entries. Your recordings stay on this device — keepsake never uploads or shares them.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "keepsake looks for a photo taken on this date in a past year, to show where you didn't write an entry. Photos are displayed from your library and never copied, stored, or uploaded.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -419,6 +420,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "keepsake uses the camera only to add photos to your journal entries. Your photos stay on this device — keepsake never uploads or shares them.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "keepsake uses Face ID to lock your journal so only you can open it. Authentication happens on this device; we never store or share your biometric data.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "keepsake uses the microphone only to record voice notes for your journal entries. Your recordings stay on this device — keepsake never uploads or shares them.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "keepsake looks for a photo taken on this date in a past year, to show where you didn't write an entry. Photos are displayed from your library and never copied, stored, or uploaded.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

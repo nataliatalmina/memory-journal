@@ -53,7 +53,12 @@ extension Calendar {
     /// Computed rather than stored because `Calendar.current` reflects live user
     /// settings — the locale or first-weekday preference can change while the app
     /// is running.
-    static var journal: Calendar {
+    ///
+    /// `nonisolated` because it holds no state of its own — it reads the system
+    /// calendar and hands back a fresh copy — and the photo lookup needs it from
+    /// a background task. (Without this it stays main-actor by the project's
+    /// default isolation, which is an error in the Swift 6 language mode.)
+    nonisolated static var journal: Calendar {
         var calendar = Calendar.current
         calendar.timeZone = .gmt
         return calendar
@@ -98,7 +103,10 @@ extension Date {
     ///
     /// `local` is the calendar deciding what that day means on the ground — the
     /// user's own by default. Tests pass a fixed calendar to simulate travel.
-    func localDayBounds(in local: Calendar = .current) -> Range<Date>? {
+    /// (`nonisolated` = not tied to the main actor. This project is main-actor by
+    /// default, but this is pure arithmetic on values and the photo lookup calls
+    /// it from a background task.)
+    nonisolated func localDayBounds(in local: Calendar = .current) -> Range<Date>? {
         // Decode: which wall-clock day does this canonical instant stand for?
         let parts = Calendar.journal.dateComponents([.year, .month, .day], from: self)
 

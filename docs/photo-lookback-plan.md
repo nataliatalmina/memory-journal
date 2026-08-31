@@ -1,6 +1,6 @@
 # Photo look-back — implementation plan (Phase 7)
 
-**Status:** Phase 1 built (31 August 2026). Phases 2–5 not started.
+**Status:** Phases 1–2 built (31 August 2026). Phases 3–5 not started.
 **Written:** 31 August 2026.
 
 ---
@@ -127,7 +127,13 @@ Not in the original plan. The dismissal store has real behaviour worth pinning �
 
 ---
 
-## Phase 2 — The lookup service and the permission
+## Phase 2 — The lookup service and the permission ✅ BUILT
+
+*Built as planned. Three notes on what the compiler and the intermediate state forced:*
+
+- **`ComposerView` needed the `.limited` case too**, not just `SettingsView` — its camera and microphone switches are exhaustive over `PermissionStatus`. Neither API can return `.limited`, so both handle it alongside `.denied` with a comment saying why it's unreachable.
+- **The Settings permission-row filter moved forward from Phase 4.** Adding the `photoLibrary` case makes a Photos row appear in Settings immediately, and a permission row for a feature that doesn't exist yet is the exact shape of the thing that got build 1.0 (3) rejected. Filtering on `photoLookbackEnabled` now means no intermediate state ever shows it.
+- **`Calendar.journal` and `localDayBounds(in:)` are now `nonisolated`.** The project defaults to main-actor isolation, and the photo fetch runs on a background task; without this it's a warning today and an error under the Swift 6 language mode.
 
 ### `MemoryJournal/Services/MediaPermissions.swift`
 
@@ -160,7 +166,9 @@ func select(from candidates: [PhotoCandidate],
             blocked: Set<String>) -> PhotoCandidate?
 ```
 
-Drops screenshots and blocked identifiers, prefers favourites when any survive, then picks deterministically from what remains.
+Drops screenshots and blocked identifiers, prefers favourites when any survive, sorts by identifier, then picks deterministically from what remains.
+
+**The sort matters.** Without it the pick depends on the order Photos happened to return assets in, which is not ours to rely on — the same day could yield a different photo after a library change that didn't touch that day at all.
 
 **The pick must be stable.** `randomElement()` is wrong here: `JournalView` re-renders on every `@Query` change and every sheet presentation, so a fresh random pick would visibly swap the photo under the user. Seed from the target date. Note that `Date.hashValue` is **not** stable across process launches — use something like `Int(seed.timeIntervalSince1970) % count`.
 

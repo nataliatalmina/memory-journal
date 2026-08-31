@@ -22,6 +22,7 @@ struct SettingsView: View {
     // (`JournalView`). Writing it here updates Home immediately — no second copy.
     @AppStorage(PreferenceKey.lookbackMode) private var lookbackMode: LookbackMode = .fiveMonths
     @AppStorage(PreferenceKey.appLockEnabled) private var appLockEnabled = false
+    @AppStorage(PreferenceKey.photoLookbackEnabled) private var photoLookbackEnabled = false
 
     // SwiftData context — used by "Delete all data" to wipe every entry.
     @Environment(\.modelContext) private var context
@@ -90,10 +91,18 @@ struct SettingsView: View {
 
     // MARK: - permissions
 
+    /// Camera and Microphone always; Photos only while photo look-back is on.
+    /// Showing a permission row for a feature the user has switched off would be
+    /// asking about access the app has no reason to want — which is the shape of
+    /// the thing that got build 1.0 (3) rejected.
+    private var visibleCapabilities: [MediaCapability] {
+        MediaCapability.allCases.filter { $0 != .photoLibrary || photoLookbackEnabled }
+    }
+
     private var permissionsSection: some View {
         SettingsSection(title: "permissions") {
             VStack(spacing: 0) {
-                ForEach(Array(MediaCapability.allCases.enumerated()), id: \.element) { index, capability in
+                ForEach(Array(visibleCapabilities.enumerated()), id: \.element) { index, capability in
                     if index > 0 { RowSeparator() }
                     PermissionRow(
                         capability: capability,
@@ -322,8 +331,11 @@ private struct ChipRow: View {
 /// so that's the only way to change it afterwards).
 ///
 /// Wording is deliberately neutral ("Not set", not "Enable") — see the note in
-/// `MediaPermissionsView` about guideline 5.1.1(iv). There is no Photo Library
-/// row because `PhotosPicker` needs no permission.
+/// `MediaPermissionsView` about guideline 5.1.1(iv).
+///
+/// The Photos row appears only when photo look-back is switched on: attaching a
+/// photo still needs no permission, so with the feature off there is nothing for
+/// the row to be about.
 private struct PermissionRow: View {
     let capability: MediaCapability
     let status: PermissionStatus
@@ -355,14 +367,17 @@ private struct PermissionRow: View {
     private func act() {
         switch status {
         case .notDetermined: onRequest()
-        case .granted, .denied: openSettings()
+        // Limited access can only be widened in the Settings app, same as a
+        // decided yes or no — iOS won't ask twice.
+        case .granted, .denied, .limited: openSettings()
         }
     }
 
     private var name: String {
         switch capability {
-        case .camera:     "Camera"
-        case .microphone: "Microphone"
+        case .camera:       "Camera"
+        case .microphone:   "Microphone"
+        case .photoLibrary: "Photos"
         }
     }
 
@@ -372,6 +387,10 @@ private struct PermissionRow: View {
         case .granted:       "On"
         case .denied:        "Off"
         case .notDetermined: "Not set"
+        // "Selected Photos". Named rather than rounded up to "On", because photo
+        // look-back can only search the photos the user picked and will find
+        // almost nothing — the row is the one place that can say so.
+        case .limited:       "Limited"
         }
     }
 
@@ -380,6 +399,7 @@ private struct PermissionRow: View {
         case .granted:       Color.appPrimary
         case .notDetermined: Color.appPrimary
         case .denied:        Color.appBodyText.opacity(0.6)
+        case .limited:       Color.appBodyText.opacity(0.6)
         }
     }
 
