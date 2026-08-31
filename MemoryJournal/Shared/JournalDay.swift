@@ -30,6 +30,18 @@
 //  `Calendar.current` remains correct for "what day is it right now?" questions
 //  (see `DailyPrompts`), because that genuinely is a local question.
 //
+//  GOING THE OTHER WAY. Entry dates are UTC-encoded, but anything we match them
+//  against OUTSIDE our own database — photo capture times, files, other apps'
+//  data — is not. Those things carry real instants in real time zones, so before
+//  comparing, a canonical day has to be *decoded* back into a wall-clock day and
+//  rebuilt as a range of instants in the LOCAL calendar. That's
+//  `localDayBounds(in:)` below, and it's the exact mirror of `journalDay(in:)`.
+//
+//  Using the UTC day directly as a range is a real bug, not a rounding error: in
+//  Los Angeles, "31 Aug 2025 UTC" spans 5pm on the 30th to 5pm on the 31st, so a
+//  photo taken that evening is missed and one from the previous evening is
+//  wrongly counted. Same shape as the travel bug, just pointing outwards.
+//
 
 import Foundation
 
@@ -69,5 +81,45 @@ extension Date {
     /// Used by the one-time migration to tell converted entries from legacy ones.
     var isCanonicalJournalDay: Bool {
         self == Calendar.journal.startOfDay(for: self)
+    }
+
+    /// The span of real instants that this canonical journal day covers in a
+    /// **local** calendar — the mirror of `journalDay(in:)` (see the file header).
+    ///
+    /// Use this whenever a journal day has to be compared against timestamps that
+    /// came from outside our database (photo capture dates, file dates). Never use
+    /// the canonical instant itself as the start of such a range: west of UTC it
+    /// starts the range on the previous afternoon.
+    ///
+    /// The result is a **half-open** `Range` — `start..<end`, i.e. the whole of
+    /// that day up to but NOT including the next day's first moment. Returning a
+    /// `Range` rather than two loose dates means `contains(_:)` gets the boundary
+    /// right for us: 23:59:59 is in, the next midnight is out.
+    ///
+    /// `local` is the calendar deciding what that day means on the ground — the
+    /// user's own by default. Tests pass a fixed calendar to simulate travel.
+    func localDayBounds(in local: Calendar = .current) -> Range<Date>? {
+        // Decode: which wall-clock day does this canonical instant stand for?
+        let parts = Calendar.journal.dateComponents([.year, .month, .day], from: self)
+
+        // Rebuild that day in the local calendar, anchored at NOON rather than
+        // midnight. Some days have no midnight — when clocks jump forward at
+        // 00:00 the day starts at 01:00 — and noon exists everywhere, so this
+        // avoids asking for an instant that doesn't exist. `startOfDay` then
+        // gives us the day's true first moment, whatever time that turns out to be.
+        guard let noon = local.date(from: DateComponents(year: parts.year,
+                                                         month: parts.month,
+                                                         day: parts.day,
+                                                         hour: 12)),
+              let nextNoon = local.date(byAdding: .day, value: 1, to: noon) else { return nil }
+
+        let start = local.startOfDay(for: noon)
+        let end = local.startOfDay(for: nextNoon)
+
+        // `Range` traps if the bounds are reversed. They can't be in practice
+        // (tomorrow always starts after today), but the initialiser is not
+        // failable, so guard rather than risk a crash on some exotic calendar.
+        guard start < end else { return nil }
+        return start..<end
     }
 }

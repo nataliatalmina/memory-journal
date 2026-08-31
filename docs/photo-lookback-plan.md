@@ -1,6 +1,6 @@
 # Photo look-back — implementation plan (Phase 7)
 
-**Status:** planned, not built. Nothing in this document has been implemented yet.
+**Status:** Phase 1 built (31 August 2026). Phases 2–5 not started.
 **Written:** 31 August 2026.
 
 ---
@@ -81,17 +81,21 @@ This is `journalDay(in:)` run backwards. It gets its own documented function in 
 
 ---
 
-## Phase 1 — Date math and preferences
+## Phase 1 — Date math and preferences ✅ BUILT
 
 No Photos framework, no UI. Fully unit-testable, ships behind nothing because nothing reads it yet.
+
+*Built as planned, with two deliberate changes: the bounds are returned as a `Range<Date>` rather than a tuple, and the dismissal store got its own test file.*
 
 ### `MemoryJournal/Shared/JournalDay.swift`
 
 Add the inverse of `journalDay(in:)`:
 
 ```swift
-func localDayBounds(in local: Calendar = .current) -> (start: Date, end: Date)?
+func localDayBounds(in local: Calendar = .current) -> Range<Date>?
 ```
+
+**Returns a half-open `Range`, not a `(start, end)` tuple.** `start..<end` states the half-openness in the type, and `contains(_:)` then gets the boundary right for free — a midnight photo can't be double-counted into two days. Anchored on **noon**, not midnight, because some days have no midnight: where clocks jump forward at 00:00 the day begins at 01:00, and asking for an instant that doesn't exist gets you a silently adjusted answer.
 
 Decodes a canonical UTC-midnight journal day back to year/month/day using `Calendar.journal`, then rebuilds `[startOfDay, startOfNextDay)` in `local`.
 
@@ -114,6 +118,12 @@ Follows the cross-zone discipline established in `DateLookupTests` — **write i
 - Half-open bounds: 23:59:59 on the day is inside, exact midnight the next day is outside.
 - 29 Feb and 31st-of-month targets (fed from `DateLookup.targetDates`) produce bounds on the **clamped** day.
 - DST transition days: the day is 23 or 25 hours long and the bounds must cover it exactly.
+
+Built with two additions: a test that constructs the **wrong** version (canonical instant + 24 hours) and asserts it both misses the real photo and matches the wrong one, so the failure mode is visible in the suite rather than only in this document; and a São Paulo case for the missing-midnight day.
+
+### `MemoryJournalTests/PhotoDismissalsTests.swift` (new)
+
+Not in the original plan. The dismissal store has real behaviour worth pinning — dedupe, persistence, clearing — and a dismissal that silently fails to stick means re-offering a photo someone asked to be rid of. Each test uses its own throwaway `UserDefaults` suite.
 
 ---
 
