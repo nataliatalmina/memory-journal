@@ -36,6 +36,10 @@ struct SettingsView: View {
     @State private var showPrivacyPolicy = false
     @State private var showDeleteConfirm = false
 
+    /// How many photos the user has hidden from their look-back. Held in state
+    /// rather than read inline so the row updates the moment it's cleared.
+    @State private var dismissedPhotoCount = 0
+
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
@@ -84,6 +88,21 @@ struct SettingsView: View {
 
                 // Mirror onboarding: show the periods this choice will surface.
                 ChipRow(labels: lookbackMode.exampleChips())
+
+                RowSeparator()
+
+                // The same opt-in as onboarding, wording included. It belongs in
+                // this section rather than under "permissions" because it is a
+                // choice about what the look-back shows — the permission it may
+                // later need is a separate question, asked on the Journal screen.
+                PhotoLookbackRow(isOn: $photoLookbackEnabled)
+
+                // Only worth offering once there's something to forget.
+                if dismissedPhotoCount > 0 {
+                    RowSeparator()
+                    ForgetDismissedPhotosRow(count: dismissedPhotoCount,
+                                             action: forgetDismissedPhotos)
+                }
             }
             .padding(Spacing.md)
         }
@@ -200,6 +219,14 @@ struct SettingsView: View {
             statuses[capability] = MediaPermissions.status(of: capability)
         }
         lockAvailability = BiometricLock.availability()
+        dismissedPhotoCount = PhotoDismissals.count()
+    }
+
+    /// Let previously hidden photos appear again. Not destructive — it restores
+    /// rather than removes — so it needs no confirmation.
+    private func forgetDismissedPhotos() {
+        PhotoDismissals.clear()
+        dismissedPhotoCount = 0
     }
 
     private func request(_ capability: MediaCapability) {
@@ -213,10 +240,76 @@ struct SettingsView: View {
         try? context.delete(model: Entry.self)
         try? context.save()
         MediaStore.deleteAllMedia()
+
+        // The dismissed-photo list is user data too — a record of choices they
+        // made — so "Delete All Data" has to mean it.
+        PhotoDismissals.clear()
+        dismissedPhotoCount = 0
     }
 }
 
 // MARK: - Reusable building blocks
+
+/// The photo look-back opt-in. Same wording as the onboarding screen, so the
+/// setting the user meets twice reads the same both times.
+///
+/// Like that screen, this touches no Photos API — it stores intent. The prompt
+/// belongs to the Journal screen's in-context card.
+private struct PhotoLookbackRow: View {
+    @Binding var isOn: Bool
+
+    private let explanation = "When there's no entry from a year ago, keepsake can show a photo you took that day. Nothing is copied or stored."
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Photos from this date")
+                    .font(.kyoto(size: 16))
+                    .foregroundStyle(Color.appBodyText)
+                Text(explanation)
+                    .font(.kyoto(size: 13))
+                    .foregroundStyle(Color.appBodyText.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .tint(Color.appPrimary)
+        }
+        .padding(.vertical, Spacing.sm)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Photos from this date")
+        .accessibilityHint(explanation)
+    }
+}
+
+/// Undoes every "Don't show this photo". Shown only when there is something to
+/// undo, so the setting doesn't advertise a feature the user hasn't met yet.
+private struct ForgetDismissedPhotosRow: View {
+    let count: Int
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Forget Hidden Photos")
+                        .font(.kyoto(size: 16))
+                        .foregroundStyle(Color.appPrimary)
+                    Text(count == 1 ? "1 photo is hidden from your look-back."
+                                    : "\(count) photos are hidden from your look-back.")
+                        .font(.kyoto(size: 13))
+                        .foregroundStyle(Color.appBodyText.opacity(0.6))
+                }
+                Spacer()
+            }
+            .padding(.vertical, Spacing.sm)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Lets hidden photos appear in your look-back again")
+    }
+}
 
 /// A titled group: a lowercase section title above an off-white rounded card.
 private struct SettingsSection<Content: View>: View {

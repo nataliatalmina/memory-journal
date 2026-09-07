@@ -8,6 +8,19 @@
 //  we PERSIST the choice into `LookbackMode` (UserDefaults via @AppStorage) —
 //  the same setting the journal query reads and Settings will later edit.
 //
+//  IT ALSO CARRIES THE PHOTO LOOK-BACK TOGGLE, and there is a rule about that.
+//  This screen must NEVER call a Photos API or request any permission. It stores
+//  an intent — "I'd like photos in my empty look-back slots" — in exactly the way
+//  it already stores five-months-vs-five-years. The system prompt is raised much
+//  later, and only when the user taps the card in the empty slot itself on the
+//  Journal screen (`LookbackPhotoOfferRow`).
+//
+//  That separation is deliberate: a screen that explains a permission and then
+//  triggers it violates App Store guideline 5.1.1(iv), which is what got build
+//  1.0 (3) rejected. Hence also no persuasive vocabulary anywhere here — no
+//  "Allow", "Enable", "Turn on", "Grant", or "Access". See CLAUDE.md →
+//  "Permission requests" before changing a word of this.
+//
 
 import SwiftUI
 
@@ -19,9 +32,13 @@ struct ViewModeSelectionView: View {
     // We write to it on Continue. Default `.fiveMonths` matches the Figma, which
     // shows the Five-Month card pre-selected.
     @AppStorage(PreferenceKey.lookbackMode) private var savedMode: LookbackMode = .fiveMonths
+    @AppStorage(PreferenceKey.photoLookbackEnabled) private var savedPhotoLookback = false
 
     // The live selection while on this screen (committed to `savedMode` on Continue).
     @State private var selection: LookbackMode = .fiveMonths
+    // Likewise for the photo toggle. Off by default: this is opt-in, and a
+    // pre-ticked box isn't a choice.
+    @State private var wantsPhotos = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -50,6 +67,9 @@ struct ViewModeSelectionView: View {
                         }
                     }
                     .padding(.top, Spacing.md)
+
+                    PhotoLookbackOptIn(isOn: $wantsPhotos)
+                        .padding(.top, Spacing.sm)
                 }
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Spacing.lg)
@@ -58,7 +78,8 @@ struct ViewModeSelectionView: View {
 
             // Continue is pinned below the scroll area so it's always reachable.
             AppButton(title: "Continue") {
-                savedMode = selection          // persist the choice
+                savedMode = selection                  // persist the choices
+                savedPhotoLookback = wantsPhotos
                 onContinue()
             }
             .padding(.horizontal, Spacing.lg)
@@ -66,7 +87,47 @@ struct ViewModeSelectionView: View {
             .padding(.bottom, Spacing.md)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear { selection = savedMode }    // start on whatever's already stored
+        .onAppear {                            // start on whatever's already stored
+            selection = savedMode
+            wantsPhotos = savedPhotoLookback
+        }
+    }
+}
+
+/// The photo look-back opt-in: a plain preference, on a screen of preferences.
+///
+/// Deliberately quieter than the two look-back cards above it — an off-white card
+/// rather than a filled teal one — because it's a secondary choice, and because
+/// something that looks like a call to action in front of a later permission
+/// prompt is exactly what we must not build (see the file header).
+private struct PhotoLookbackOptIn: View {
+    @Binding var isOn: Bool
+
+    private let explanation = "When there's no entry from a year ago, keepsake can show a photo you took that day. Nothing is copied or stored."
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text("photos from this date")
+                    .font(.kyoto(size: 16))
+                    .foregroundStyle(Color.appPrimary)
+
+                Text(explanation)
+                    .font(.kyoto(size: 13))
+                    .foregroundStyle(Color.appBodyText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .multilineTextAlignment(.leading)
+
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .tint(Color.appPrimary)
+        }
+        .padding(Spacing.md)
+        .background(Color.appSurface, in: .rect(cornerRadius: CornerRadius.card))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Photos from this date")
+        .accessibilityHint(explanation)
     }
 }
 

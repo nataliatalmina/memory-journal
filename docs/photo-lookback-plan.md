@@ -1,6 +1,6 @@
 # Photo look-back — implementation plan (Phase 7)
 
-**Status:** Phases 1–3 built (31 August 2026). Phases 4–5 not started.
+**Status:** Phases 1–4 built (31 August 2026). Phase 5 (docs, policy, review prep) not started.
 **Written:** 31 August 2026.
 
 ---
@@ -255,7 +255,12 @@ Rendered in a gap slot when `photoLookbackEnabled` is true but permission is not
 
 ---
 
-## Phase 4 — Onboarding and Settings
+## Phase 4 — Onboarding and Settings ✅ BUILT
+
+*Built as planned. Two notes:*
+
+- **The onboarding opt-in is an off-white card, not a filled teal one** like the two look-back options above it. It is a secondary choice, and something that looks like a call to action sitting in front of a later permission prompt is the thing we must not build.
+- **The "Forget Hidden Photos" row appears only when the count is above zero**, so the setting doesn't advertise a feature the user hasn't met. It needs no confirmation — it restores rather than removes.
 
 ### `MemoryJournal/Onboarding/ViewModeSelectionView.swift`
 
@@ -275,7 +280,7 @@ Add a file-header comment explaining that this screen deliberately touches no Ph
 Four changes:
 
 1. **`lookBackSection`** — the same toggle, under the existing `LookbackSegmented` and chips. It is the same decision domain: what appears in your look-back.
-2. **`permissionsSection`** — a Photos row appears automatically via `MediaCapability.allCases`, but it should be **filtered out when the feature is off**. Showing a permission row for a disabled feature is noise.
+2. **`permissionsSection`** — a Photos row appears automatically via `MediaCapability.allCases`, but it should be **filtered out when the feature is off**. Showing a permission row for a disabled feature is noise. *(Done in Phase 2, ahead of schedule — see that section.)*
 3. **"Forget dismissed photos"** row, with a count, so dismissals are not a one-way door.
 4. **`deleteAllData()`** must clear the dismissal list too. It is user data, and "Delete All Data" has to mean it.
 
@@ -317,6 +322,7 @@ Phases 1 → 2 are invisible and fully testable: run the suite and be confident 
 **Two testing notes:**
 
 - The Simulator's stock library has a handful of photos with unhelpful dates. To see anything you need images whose EXIF dates fall on today's month/day in past years: write a JPEG with `kCGImagePropertyExifDateTimeOriginal` set, then `xcrun simctl addmedia booted <file>` — Photos files it on that day. Phase 3 was verified this way. Still worth a `-seedPhotoLookback` DEBUG launch argument, in the spirit of the existing ones.
+- **Don't pass `-hasOnboarded NO`** to replay onboarding. Launch arguments live in `NSArgumentDomain`, which outranks everything the app writes, so finishing onboarding can't stick and the flow loops. Use the Dev tab's "Replay onboarding" button, or launch with no arguments after resetting.
 - **Build Debug explicitly** when installing by hand: `xcodebuild build` uses the scheme's Release configuration, so `xcodebuild build && simctl install <Debug path>` silently installs a stale binary — and the DEBUG-only launch arguments won't exist in the Release build anyway.
 - **Test the `.limited` path deliberately** by granting "Selected Photos". It is the state most likely to ship broken, because it looks exactly like "no photos found".
 
