@@ -31,6 +31,20 @@ struct DateLookupDevView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // FIRST, deliberately. The sections below grow with the seeded
+                // data, and this screen sits under the custom tab bar — anything
+                // at the bottom of this Form ends up unreachable (see the
+                // `.contentMargins` note below). The controls you actually reach
+                // for while testing belong at the top.
+                Section("Onboarding") {
+                    LabeledContent("Chosen view-mode", value: savedMode.title)
+                    // Flipping this flag false makes RootView swap back to the
+                    // onboarding flow immediately — handy for re-testing it.
+                    Button("Replay onboarding", role: .destructive) {
+                        hasOnboarded = false
+                    }
+                }
+
                 Section("Query") {
                     DatePicker("Target date", selection: $targetDate, displayedComponents: .date)
                     Picker("Mode", selection: $mode) {
@@ -79,17 +93,16 @@ struct DateLookupDevView: View {
                     }
                 }
 
-                Section("Onboarding") {
-                    LabeledContent("Chosen view-mode", value: savedMode.title)
-                    // Flipping this flag false makes RootView swap back to the
-                    // onboarding flow immediately — handy for re-testing it.
-                    Button("Replay onboarding", role: .destructive) {
-                        hasOnboarded = false
-                    }
-                }
             }
             .navigationTitle("DateLookup dev")
             .navigationBarTitleDisplayMode(.inline)
+            // The custom tab bar is added with `.safeAreaInset` on the ZStack in
+            // RootTabView, and a `Form` nested inside this NavigationStack doesn't
+            // pick that inset up — so its last rows sat under the bar with no way
+            // to scroll them clear. The app's other screens are plain ScrollViews
+            // with their own generous bottom padding, which is why only this one
+            // is affected. 100pt comfortably clears the bar on every device.
+            .contentMargins(.bottom, 100, for: .scrollContent)
         }
         .onAppear(perform: runQuery)
     }
