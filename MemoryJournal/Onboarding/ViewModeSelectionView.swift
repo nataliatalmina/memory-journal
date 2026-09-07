@@ -107,7 +107,7 @@ private struct PhotoLookbackOptIn: View {
     // "a year ago" was wrong in Five-Month mode — which is the default — so the
     // wording now works whichever window the user picked. Shorter too, which is
     // what got this card back above the fold.
-    private let explanation = "On days you didn't write, keepsake can show a photo you took instead. Nothing is copied or stored."
+    private let explanation = "On days without journal entries, keepsake can show you a photo you took instead. Nothing is copied or stored."
 
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.md) {

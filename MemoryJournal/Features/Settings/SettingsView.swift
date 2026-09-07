@@ -259,7 +259,7 @@ private struct PhotoLookbackRow: View {
     @Binding var isOn: Bool
 
     // Kept identical to the onboarding card's wording (see PhotoLookbackOptIn).
-    private let explanation = "On days you didn't write, keepsake can show a photo you took instead. Nothing is copied or stored."
+    private let explanation = "On days without journal entries, keepsake can show you a photo you took instead. Nothing is copied or stored."
 
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.md) {
