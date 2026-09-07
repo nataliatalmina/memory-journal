@@ -101,7 +101,13 @@ struct LookbackPhotoOfferRow: View {
                 // Neutral, factual wording. No "Allow", "Enable" or "Turn on" —
                 // persuasive language in front of a system prompt is what got
                 // build 1.0 (3) rejected.
-                Text("Nothing written on this date. Show a photo from that day instead?")
+                //
+                // It DOES forewarn the system dialog, though. Someone who switched
+                // this on in onboarding has already said yes once; without that
+                // clause the prompt arrives as a surprise, and the card reads as
+                // the app asking a question it was already answered. Saying what
+                // the tap does is description, not persuasion.
+                Text("Nothing written on this date. Tap to look for a photo — keepsake will ask to read your photo library.")
                     .font(.kyotoItalic(size: 16))
                     .foregroundStyle(Color.appBodyText)
                     .fixedSize(horizontal: false, vertical: true)

@@ -97,6 +97,20 @@ struct SettingsView: View {
                 // later need is a separate question, asked on the Journal screen.
                 PhotoLookbackRow(isOn: $photoLookbackEnabled)
 
+                // The setting and the iOS permission are two separate yeses, and
+                // the gap between them is invisible otherwise: someone who
+                // switched this on can sit waiting for photos that never come
+                // because nothing has asked iOS yet. Shown only while that's
+                // actually true — once access is decided, either way, the
+                // permission row below says so.
+                if photoLookbackEnabled, statuses[.photoLibrary] == .notDetermined {
+                    Text("keepsake will ask to read your photo library the first time it needs a photo.")
+                        .font(.kyoto(size: 13))
+                        .foregroundStyle(Color.appBodyText.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 // Only worth offering once there's something to forget.
                 if dismissedPhotoCount > 0 {
                     RowSeparator()
