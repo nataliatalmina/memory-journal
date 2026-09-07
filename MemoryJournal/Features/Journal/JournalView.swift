@@ -13,9 +13,13 @@
 
 import SwiftUI
 import SwiftData
+import UIKit   // UIApplication.openSettingsURLString
 
 struct JournalView: View {
     @AppStorage(PreferenceKey.lookbackMode) private var lookbackMode: LookbackMode = .fiveMonths
+    @AppStorage(PreferenceKey.photoLookbackEnabled) private var photoLookbackEnabled = false
+
+    @Environment(\.openURL) private var openURL
 
     // `@Query` fetches from SwiftData AND auto-updates the view whenever the store
     // changes — so a newly saved entry appears here immediately.
@@ -35,6 +39,23 @@ struct JournalView: View {
     // "Delete this memory" button. A sheet floats above the bar, keeping it reachable.
     @State private var detailEntry: Entry?
 
+    // MARK: Photo look-back state (Phase 7)
+
+    /// The photo chosen for each look-back date that has one. Empty when the
+    /// feature is off, unauthorised, or simply found nothing.
+    @State private var photos: [Date: PhotoCandidate] = [:]
+
+    /// The live photo-library authorization. Read on appear, updated after the
+    /// user answers the system prompt.
+    @State private var photoAccess: PermissionStatus = .notDetermined
+
+    /// Bumped when the user dismisses a photo, purely to re-run the lookup so the
+    /// slot can refill with a different photo from the same day.
+    @State private var dismissalGeneration = 0
+
+    /// The photo open in the full-screen viewer (nil = closed).
+    @State private var viewerPhoto: PhotoSelection?
+
     // Today as a canonical entry date (see Shared/JournalDay.swift). Flips at local
     // midnight, but encoded so it compares exactly against stored entries.
     private var today: Date { .journalToday }
@@ -52,11 +73,70 @@ struct JournalView: View {
         return allEntries.filter { targets.contains($0.date) && $0.date != today }
     }
 
+    /// The look-back dates in display order — most recent first, today dropped
+    /// (today has its own place in the header).
+    private var pastTargetDates: [Date] {
+        Array(DateLookup().targetDates(matching: today,
+                                       mode: lookbackMode.lookupMode,
+                                       count: LookbackMode.count).dropFirst())
+    }
+
+    /// One entry per look-back date, for O(1) lookup while building the slots.
+    /// The app allows only one entry per day, so a collision can't happen; the
+    /// `uniquingKeysWith` is just what the initialiser requires.
+    private var entriesByDate: [Date: Entry] {
+        Dictionary(lookbackEntries.map { ($0.date, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// What actually renders below the header, in order.
+    ///
+    /// Each past date resolves to exactly one thing: the entry written that day,
+    /// or a photo taken that day, or — once, in the topmost gap — an invitation
+    /// to turn photos on. A date with none of those contributes nothing, which is
+    /// the same silence the screen has always used for a day with no entry.
+    private var lookbackSlots: [LookbackSlot] {
+        let entries = entriesByDate
+        var slots: [LookbackSlot] = []
+        var hasShownPrompt = false
+
+        for date in pastTargetDates {
+            if let entry = entries[date] {
+                slots.append(.entry(entry))
+                continue
+            }
+            if let candidate = photos[date] {
+                slots.append(.photo(date: date, candidate: candidate))
+                continue
+            }
+
+            // An empty slot. Say something about photos only if the user has asked
+            // for them and there's something to say — and only once, so an empty
+            // week doesn't turn into a column of identical cards.
+            guard photoLookbackEnabled, !hasShownPrompt else { continue }
+            switch photoAccess {
+            case .notDetermined:
+                slots.append(.offer(date: date))
+                hasShownPrompt = true
+            case .limited:
+                slots.append(.limitedAccess(date: date))
+                hasShownPrompt = true
+            case .granted, .denied:
+                // Nothing to add: either we searched and found no photo that day,
+                // or the user has said no and mustn't be asked again.
+                continue
+            }
+        }
+        return slots
+    }
+
     private var todayEntry: Entry? {
         allEntries.first { $0.date == today }
     }
 
-    private var isEmpty: Bool { todayEntry == nil && lookbackEntries.isEmpty }
+    /// Nothing to show at all — not today's entry, not a past entry, not a photo,
+    /// not even an offer of one. Note this counts SLOTS, not entries: a screen
+    /// full of photos is not an empty screen.
+    private var isEmpty: Bool { todayEntry == nil && lookbackSlots.isEmpty }
 
     /// True once the user has written ANY entry, anywhere in the journal — not just
     /// inside today's look-back window. The empty state uses this to tell the two
@@ -72,6 +152,7 @@ struct JournalView: View {
                 if isEmpty {
                     EmptyHomeView(today: today,
                                   hasAnyEntries: hasAnyEntries,
+                                  photoNote: photoNote,
                                   onCreate: openCreate)
                 } else {
                     populatedHome
@@ -118,6 +199,17 @@ struct JournalView: View {
             }
             .presentationBackground(Color.appBackground)
         }
+        .fullScreenCover(item: $viewerPhoto) { selection in
+            PhotoViewerView(date: selection.date,
+                            candidate: selection.candidate,
+                            onDismissPhoto: { dismissPhoto(selection.candidate) })
+        }
+        // Re-reads the permission when the screen comes back into view — the user
+        // may have changed it in the Settings app since we last looked.
+        .onAppear(perform: refreshPhotoAccess)
+        // Re-runs whenever anything that could change the answer changes: the
+        // window, the day, the setting, the permission, or a dismissal.
+        .task(id: photoTaskKey) { await refreshPhotos() }
     }
 
     /// Builds the composer for the requested mode. Create and edit share one
@@ -154,22 +246,135 @@ struct JournalView: View {
                         .padding(.bottom, Spacing.lg)
                 }
 
-                ForEach(lookbackEntries) { entry in
+                ForEach(lookbackSlots) { slot in
                     RowDivider()
-                    Button {
-                        detailEntry = entry
-                    } label: {
-                        EntryRow(entry: entry)
-                    }
-                    .buttonStyle(.plain)
+                    slotView(for: slot)
                 }
             }
             .padding(.bottom, Spacing.xl)
         }
     }
 
+    /// Renders one look-back slot, whatever it turned out to hold.
+    @ViewBuilder
+    private func slotView(for slot: LookbackSlot) -> some View {
+        switch slot {
+        case .entry(let entry):
+            Button {
+                detailEntry = entry
+            } label: {
+                EntryRow(entry: entry)
+            }
+            .buttonStyle(.plain)
+
+        case .photo(let date, let candidate):
+            LookbackPhotoRow(
+                date: date,
+                candidate: candidate,
+                onOpen: { viewerPhoto = PhotoSelection(date: date, candidate: candidate) },
+                onDismiss: { dismissPhoto(candidate) }
+            )
+
+        case .offer(let date):
+            LookbackPhotoOfferRow(date: date, onTap: requestPhotoAccess)
+
+        case .limitedAccess:
+            LookbackPhotoLimitedRow(onTap: openSystemSettings)
+        }
+    }
+
     private func openCreate() { composerMode = .create }
     private func openEdit(_ entry: Entry) { composerMode = .edit(entry) }
+
+    // MARK: - Photo look-back
+
+    /// Everything that can change which photos belong on screen. When this string
+    /// changes, `.task(id:)` cancels any in-flight lookup and starts a fresh one.
+    private var photoTaskKey: String {
+        "\(lookbackMode.rawValue)|\(today.timeIntervalSince1970)|\(photoLookbackEnabled)|\(photoAccess)|\(dismissalGeneration)"
+    }
+
+    /// A line for the empty state explaining why there are no photos, when there
+    /// is an honest explanation to give. Silent when the feature is off or the
+    /// user declined — neither is a situation that needs commentary.
+    private var photoNote: String? {
+        guard photoLookbackEnabled else { return nil }
+        switch photoAccess {
+        case .granted: return "No photos from this date either."
+        case .limited: return "keepsake can only see the photos you selected."
+        case .notDetermined, .denied: return nil
+        }
+    }
+
+    private func refreshPhotoAccess() {
+        guard photoLookbackEnabled else { return }
+        photoAccess = MediaPermissions.status(of: .photoLibrary)
+    }
+
+    /// Look up one photo per empty look-back date.
+    ///
+    /// Runs for `.limited` as well as `.granted`: the user allowed *something*, so
+    /// searching it is honest — it just usually comes back empty, which is what
+    /// `LookbackPhotoLimitedRow` exists to explain.
+    private func refreshPhotos() async {
+        guard photoLookbackEnabled, photoAccess == .granted || photoAccess == .limited else {
+            photos = [:]
+            return
+        }
+        let lookback = PhotoLookback(blocked: PhotoDismissals.all())
+        photos = await lookback.photos(for: pastTargetDates)
+    }
+
+    /// Raise the system prompt. This is the ONLY place the app asks for photo
+    /// access, and it happens on a tap, in the slot the photo would fill — see
+    /// `LookbackPhotoOfferRow` and CLAUDE.md before moving it.
+    private func requestPhotoAccess() {
+        Task { @MainActor in
+            photoAccess = await MediaPermissions.request(.photoLibrary)
+        }
+    }
+
+    /// Hide this photo for good, then look again — another photo from the same
+    /// day may take its place.
+    private func dismissPhoto(_ candidate: PhotoCandidate) {
+        PhotoDismissals.add(candidate.localIdentifier)
+        dismissalGeneration += 1
+    }
+
+    /// Limited access can only be widened in the Settings app; iOS won't re-ask.
+    private func openSystemSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            openURL(url)
+        }
+    }
+
+    /// One row of the look-back list. Built from the target dates rather than from
+    /// the entries, so a date with no entry can still resolve to something.
+    private enum LookbackSlot: Identifiable {
+        case entry(Entry)
+        case photo(date: Date, candidate: PhotoCandidate)
+        /// The one-off invitation to switch photos on (topmost gap only).
+        case offer(date: Date)
+        /// The one-off note that "Selected Photos" limits what we can find.
+        case limitedAccess(date: Date)
+
+        var id: String {
+            switch self {
+            case .entry(let entry):          "entry-\(entry.id.uuidString)"
+            case .photo(_, let candidate):   "photo-\(candidate.localIdentifier)"
+            case .offer(let date):           "offer-\(date.timeIntervalSince1970)"
+            case .limitedAccess(let date):   "limited-\(date.timeIntervalSince1970)"
+            }
+        }
+    }
+
+    /// What the full-screen viewer is showing. Same `Identifiable`-item pattern as
+    /// the composer sheet below, for the same reason.
+    private struct PhotoSelection: Identifiable {
+        let date: Date
+        let candidate: PhotoCandidate
+        var id: String { candidate.localIdentifier }
+    }
 
     /// Drives the composer sheet. An `Identifiable` item (not a Bool + optional
     /// Entry) keeps the sheet's identity and its content in lock-step.
@@ -247,6 +452,9 @@ private struct EmptyHomeView: View {
     let today: Date
     /// Whether the journal contains any entry at all (see `JournalView.hasAnyEntries`).
     let hasAnyEntries: Bool
+    /// An optional extra line explaining why photo look-back added nothing, when
+    /// the user has it switched on. `nil` most of the time.
+    let photoNote: String?
     let onCreate: () -> Void
 
     /// Two lines of copy, picked so the wording is always factually true. Saying
@@ -289,6 +497,15 @@ private struct EmptyHomeView: View {
             .font(.kyoto(size: 16))
             .foregroundStyle(Color.appBodyText)
             .padding(.top, Spacing.md)
+
+            // Only shown when the user turned photos on and we genuinely came up
+            // empty — otherwise the screen would look broken rather than quiet.
+            if let photoNote {
+                Text(photoNote)
+                    .font(.kyotoItalic(size: 14))
+                    .foregroundStyle(Color.appBodyText.opacity(0.7))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             AppButton(title: "Create your memory", action: onCreate)
                 .frame(maxWidth: 300)

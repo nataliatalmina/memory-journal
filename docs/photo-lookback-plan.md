@@ -1,6 +1,6 @@
 # Photo look-back — implementation plan (Phase 7)
 
-**Status:** Phases 1–2 built (31 August 2026). Phases 3–5 not started.
+**Status:** Phases 1–3 built (31 August 2026). Phases 4–5 not started.
 **Written:** 31 August 2026.
 
 ---
@@ -202,7 +202,14 @@ The Photos fetch itself is not unit-testable without a library — which is exac
 
 ---
 
-## Phase 3 — The Journal screen
+## Phase 3 — The Journal screen ✅ BUILT
+
+*Built as planned, with four changes made while looking at it on a device:*
+
+- **The offer card appears in the topmost gap only**, not in every empty slot. Repeated down a sparse week it stopped reading as a quiet offer and started reading as nagging.
+- **`.limited` gets its own row** (`LookbackPhotoLimitedRow`) in that same single slot, rather than being folded into the offer card. It is a different message — not "shall I?" but "I can only see part of your library".
+- **The viewer is a `fullScreenCover`, not a `.sheet`.** The plan's reason for avoiding a push still holds; full screen simply gives the photo the whole display, which is the point of opening it.
+- **The empty state's third variant is an extra line, not a replacement.** The two existing headline/invitation pairs stay exactly as they were; a muted note appears under them when photo look-back is on and genuinely found nothing, or when limited access is why. Replacing the copy would have meant three near-identical variants to keep honest.
 
 ### `MemoryJournal/Features/Journal/JournalView.swift`
 
@@ -234,7 +241,9 @@ Wraps `PHImageManager.requestImage` at display size with `isNetworkAccessAllowed
 
 ### `MemoryJournal/Features/Journal/PhotoViewerView.swift` (new)
 
-Full-screen viewer on tap. Present as a **`.sheet`, not a push**, for the reason already documented at `JournalView.swift:36`: the custom bottom tab bar (added via `.safeAreaInset` in `RootTabView`) overlaps pushed content and traps controls near the bottom. Shows the full-size image, the date, a Done button, and the dismiss action.
+Full-screen viewer on tap, presented as a **`fullScreenCover`, not pushed**, for the reason already documented at `JournalView.swift:36`: the custom bottom tab bar (added via `.safeAreaInset` in `RootTabView`) overlaps pushed content and traps controls near the bottom. Shows the full-size image, the date, a Done button, and the dismiss action.
+
+The toolbar uses explicit `.topBarLeading` / `.topBarTrailing` placements. The semantic `.destructiveAction` and `.confirmationAction` both resolve to the trailing edge on iOS, which put the two buttons side by side and made "Done" read as a label for the one beside it.
 
 ### The offer card
 
@@ -307,7 +316,8 @@ Phases 1 → 2 are invisible and fully testable: run the suite and be confident 
 
 **Two testing notes:**
 
-- The Simulator's stock library has a handful of photos with unhelpful dates. To see anything you must drag in images whose EXIF dates fall on today's month/day in past years. Worth a `-seedPhotoLookback` DEBUG launch argument, in the spirit of the existing ones.
+- The Simulator's stock library has a handful of photos with unhelpful dates. To see anything you need images whose EXIF dates fall on today's month/day in past years: write a JPEG with `kCGImagePropertyExifDateTimeOriginal` set, then `xcrun simctl addmedia booted <file>` — Photos files it on that day. Phase 3 was verified this way. Still worth a `-seedPhotoLookback` DEBUG launch argument, in the spirit of the existing ones.
+- **Build Debug explicitly** when installing by hand: `xcodebuild build` uses the scheme's Release configuration, so `xcodebuild build && simctl install <Debug path>` silently installs a stale binary — and the DEBUG-only launch arguments won't exist in the Release build anyway.
 - **Test the `.limited` path deliberately** by granting "Selected Photos". It is the state most likely to ship broken, because it looks exactly like "no photos found".
 
 ---
