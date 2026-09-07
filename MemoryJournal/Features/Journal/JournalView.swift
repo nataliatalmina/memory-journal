@@ -20,6 +20,11 @@ struct JournalView: View {
     @AppStorage(PreferenceKey.photoLookbackEnabled) private var photoLookbackEnabled = false
 
     @Environment(\.openURL) private var openURL
+    // Which tab is showing, and whether the app is foregrounded. Both feed
+    // `photoTaskKey` — see the note there for why this screen can't rely on
+    // `onAppear` to know when to look again.
+    @Environment(AppRouter.self) private var router
+    @Environment(\.scenePhase) private var scenePhase
 
     // `@Query` fetches from SwiftData AND auto-updates the view whenever the store
     // changes — so a newly saved entry appears here immediately.
@@ -204,11 +209,9 @@ struct JournalView: View {
                             candidate: selection.candidate,
                             onDismissPhoto: { dismissPhoto(selection.candidate) })
         }
-        // Re-reads the permission when the screen comes back into view — the user
-        // may have changed it in the Settings app since we last looked.
-        .onAppear(perform: refreshPhotoAccess)
-        // Re-runs whenever anything that could change the answer changes: the
-        // window, the day, the setting, the permission, or a dismissal.
+        // Re-runs whenever anything that could change the answer changes — see
+        // `photoTaskKey`. This is the ONLY refresh trigger: `onAppear` is no use
+        // here (see the note on the key).
         .task(id: photoTaskKey) { await refreshPhotos() }
     }
 
@@ -290,8 +293,17 @@ struct JournalView: View {
 
     /// Everything that can change which photos belong on screen. When this string
     /// changes, `.task(id:)` cancels any in-flight lookup and starts a fresh one.
+    ///
+    /// `selectedTab` and `scenePhase` are in here because this screen has no
+    /// reliable "I'm being looked at again" event. `RootTabView` keeps every tab's
+    /// view alive in a ZStack (hidden ones just have opacity 0), so `onAppear`
+    /// fires ONCE at launch and never again — switching tabs doesn't re-run it.
+    /// Without these two, granting access or switching the feature on in Settings
+    /// left this screen looking at whatever it learned at launch: photos silently
+    /// never appeared. `scenePhase` covers the same thing for a grant made in the
+    /// iOS Settings app, which backgrounds us on the way out.
     private var photoTaskKey: String {
-        "\(lookbackMode.rawValue)|\(today.timeIntervalSince1970)|\(photoLookbackEnabled)|\(photoAccess)|\(dismissalGeneration)"
+        "\(lookbackMode.rawValue)|\(today.timeIntervalSince1970)|\(photoLookbackEnabled)|\(dismissalGeneration)|\(router.selectedTab)|\(scenePhase)"
     }
 
     /// A line for the empty state explaining why there are no photos, when there
@@ -306,18 +318,23 @@ struct JournalView: View {
         }
     }
 
-    private func refreshPhotoAccess() {
-        guard photoLookbackEnabled else { return }
-        photoAccess = MediaPermissions.status(of: .photoLibrary)
-    }
-
     /// Look up one photo per empty look-back date.
     ///
     /// Runs for `.limited` as well as `.granted`: the user allowed *something*, so
     /// searching it is honest — it just usually comes back empty, which is what
     /// `LookbackPhotoLimitedRow` exists to explain.
     private func refreshPhotos() async {
-        guard photoLookbackEnabled, photoAccess == .granted || photoAccess == .limited else {
+        guard photoLookbackEnabled else {
+            photos = [:]
+            return
+        }
+
+        // Read the permission FRESH rather than trusting what's in state: it can
+        // have been granted since, in Settings or in the iOS Settings app, and a
+        // stale `.notDetermined` here is exactly what made photos never appear.
+        photoAccess = MediaPermissions.status(of: .photoLibrary)
+
+        guard photoAccess == .granted || photoAccess == .limited else {
             photos = [:]
             return
         }
@@ -331,6 +348,9 @@ struct JournalView: View {
     private func requestPhotoAccess() {
         Task { @MainActor in
             photoAccess = await MediaPermissions.request(.photoLibrary)
+            // Load straight away: the permission is deliberately NOT part of
+            // `photoTaskKey`, so nothing else would notice this changed.
+            await refreshPhotos()
         }
     }
 
