@@ -104,9 +104,10 @@ struct ViewModeSelectionView: View {
 private struct PhotoLookbackOptIn: View {
     @Binding var isOn: Bool
 
-    // "a year ago" was wrong in Five-Month mode — which is the default — so the
-    // wording now works whichever window the user picked. Shorter too, which is
-    // what got this card back above the fold.
+    // Deliberately says "without journal entries" rather than naming a period:
+    // this screen is where the user picks months or years, so wording tied to
+    // either one would be wrong for half of them. "Entries" rather than "you
+    // didn't write" because an entry can be a photo or a voice note alone.
     private let explanation = "On days without journal entries, keepsake can show you a photo you took instead. Nothing is copied or stored."
 
     var body: some View {
@@ -127,6 +128,10 @@ private struct PhotoLookbackOptIn: View {
                 .labelsHidden()
                 .tint(Color.appPrimary)
         }
+        // Stretch to the full available width, the same way `LookbackOptionCard`
+        // does. Without this the HStack sizes to its content and the card sits
+        // visibly narrower than the two option cards above it.
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Spacing.md)
         .background(Color.appSurface, in: .rect(cornerRadius: CornerRadius.card))
         .accessibilityElement(children: .combine)
