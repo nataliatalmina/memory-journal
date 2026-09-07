@@ -111,31 +111,42 @@ private struct PhotoLookbackOptIn: View {
     private let explanation = "On days without journal entries, keepsake can show you a photo you took instead. Nothing is copied or stored."
 
     var body: some View {
-        HStack(alignment: .top, spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("photos from this date")
-                    .font(.kyoto(size: 16))
-                    .foregroundStyle(Color.appPrimary)
+        // The WHOLE card toggles, like the two option cards above it are entirely
+        // tappable. A bare `Toggle` only responds on the 51×31pt switch, which in
+        // a card this size means most taps land on dead space and do nothing;
+        // `allowsHitTesting(false)` hands every touch to the Button instead.
+        Button {
+            isOn.toggle()
+        } label: {
+            HStack(alignment: .top, spacing: Spacing.md) {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text("photos from this date")
+                        .font(.kyoto(size: 16))
+                        .foregroundStyle(Color.appPrimary)
 
-                Text(explanation)
-                    .font(.kyoto(size: 13))
-                    .foregroundStyle(Color.appBodyText)
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text(explanation)
+                        .font(.kyoto(size: 13))
+                        .foregroundStyle(Color.appBodyText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .multilineTextAlignment(.leading)
+                // Stretch to the full available width, the same way
+                // `LookbackOptionCard` does, so this card lines up with those above.
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Toggle("", isOn: $isOn)
+                    .labelsHidden()
+                    .tint(Color.appPrimary)
+                    .allowsHitTesting(false)
             }
-            .multilineTextAlignment(.leading)
-
-            Toggle("", isOn: $isOn)
-                .labelsHidden()
-                .tint(Color.appPrimary)
+            .padding(Spacing.md)
+            .background(Color.appSurface, in: .rect(cornerRadius: CornerRadius.card))
+            .contentShape(Rectangle())
         }
-        // Stretch to the full available width, the same way `LookbackOptionCard`
-        // does. Without this the HStack sizes to its content and the card sits
-        // visibly narrower than the two option cards above it.
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.md)
-        .background(Color.appSurface, in: .rect(cornerRadius: CornerRadius.card))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Photos from this date")
+        .buttonStyle(.plain)
+        .accessibilityRepresentation {
+            Toggle("Photos from this date", isOn: $isOn)
+        }
         .accessibilityHint(explanation)
     }
 }

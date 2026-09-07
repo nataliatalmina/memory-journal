@@ -262,24 +262,35 @@ private struct PhotoLookbackRow: View {
     private let explanation = "On days without journal entries, keepsake can show you a photo you took instead. Nothing is copied or stored."
 
     var body: some View {
-        HStack(alignment: .top, spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Photos from this date")
-                    .font(.kyoto(size: 16))
-                    .foregroundStyle(Color.appBodyText)
-                Text(explanation)
-                    .font(.kyoto(size: 13))
-                    .foregroundStyle(Color.appBodyText.opacity(0.6))
-                    .fixedSize(horizontal: false, vertical: true)
+        // Whole row tappable — see the note in `AppLockRow` for why a bare Toggle
+        // isn't enough.
+        Button {
+            isOn.toggle()
+        } label: {
+            HStack(alignment: .top, spacing: Spacing.md) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Photos from this date")
+                        .font(.kyoto(size: 16))
+                        .foregroundStyle(Color.appBodyText)
+                    Text(explanation)
+                        .font(.kyoto(size: 13))
+                        .foregroundStyle(Color.appBodyText.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Toggle("", isOn: $isOn)
+                    .labelsHidden()
+                    .tint(Color.appPrimary)
+                    .allowsHitTesting(false)
             }
-            Spacer()
-            Toggle("", isOn: $isOn)
-                .labelsHidden()
-                .tint(Color.appPrimary)
+            .padding(.vertical, Spacing.sm)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, Spacing.sm)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Photos from this date")
+        .buttonStyle(.plain)
+        .accessibilityRepresentation {
+            Toggle("Photos from this date", isOn: $isOn)
+        }
         .accessibilityHint(explanation)
     }
 }
@@ -513,26 +524,44 @@ private struct AppLockRow: View {
     private var isAvailable: Bool { availability != .unavailable }
 
     var body: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("App Lock")
-                    .font(.kyoto(size: 16))
-                    .foregroundStyle(Color.appBodyText)
-                Text(subtitle)
-                    .font(.kyoto(size: 13))
-                    .foregroundStyle(Color.appBodyText.opacity(0.6))
-                    .fixedSize(horizontal: false, vertical: true)
+        // A Button over the WHOLE row, with the switch drawn but not hit-testable.
+        //
+        // A bare `Toggle` — labelled or with `labelsHidden()` — only responds to
+        // touches on the 51×31pt switch itself, so in a full-width row most of
+        // what looks like the control is dead space and taps a few points off the
+        // switch silently do nothing. `allowsHitTesting(false)` stops the switch
+        // swallowing touches, so the Button owns every tap across the row.
+        Button {
+            isOn.toggle()
+        } label: {
+            HStack(alignment: .center, spacing: Spacing.md) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("App Lock")
+                        .font(.kyoto(size: 16))
+                        .foregroundStyle(Color.appBodyText)
+                    Text(subtitle)
+                        .font(.kyoto(size: 13))
+                        .foregroundStyle(Color.appBodyText.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Toggle("", isOn: $isOn)
+                    .labelsHidden()
+                    .tint(Color.appPrimary)
+                    .allowsHitTesting(false)
             }
-            Spacer()
-            Toggle("", isOn: $isOn)
-                .labelsHidden()
-                .tint(Color.appPrimary)
-                .disabled(!isAvailable)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.md)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.md)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("App Lock")
+        .buttonStyle(.plain)
+        .disabled(!isAvailable)
+        // To VoiceOver this is still a switch, not a button: the representation
+        // restores the real control, with its label, trait, and on/off value.
+        .accessibilityRepresentation {
+            Toggle("App Lock", isOn: $isOn)
+        }
         .accessibilityHint(subtitle)
     }
 
