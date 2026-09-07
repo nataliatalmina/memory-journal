@@ -48,14 +48,15 @@ struct ViewModeSelectionView: View {
                     Text("keep your cherished memories")
                         .font(.kyoto(size: 24))
                         .foregroundStyle(Color.appPrimary)
-                        .padding(.top, Spacing.xxl)
+                        .padding(.top, Spacing.xl)
 
-                    VStack(spacing: Spacing.md) {
-                        Text("keepsake encourages you to revisit and reflect on memories.")
-                        Text("Select how far back you want to go. You can change this anytime in Settings.")
-                    }
-                    .font(.kyoto(size: 16))
-                    .foregroundStyle(Color.appBodyText)
+                    // One line, not two. "keepsake encourages you to revisit and
+                    // reflect on memories" said what the heading and the splash
+                    // tagline already say, and the two paragraphs cost enough
+                    // height to push the photo card below the fold.
+                    Text("Select how far back you want to go. You can change this anytime in Settings.")
+                        .font(.kyoto(size: 16))
+                        .foregroundStyle(Color.appBodyText)
 
                     VStack(spacing: Spacing.lg) {
                         ForEach(LookbackMode.allCases) { mode in
@@ -103,7 +104,10 @@ struct ViewModeSelectionView: View {
 private struct PhotoLookbackOptIn: View {
     @Binding var isOn: Bool
 
-    private let explanation = "When there's no entry from a year ago, keepsake can show a photo you took that day. Nothing is copied or stored."
+    // "a year ago" was wrong in Five-Month mode — which is the default — so the
+    // wording now works whichever window the user picked. Shorter too, which is
+    // what got this card back above the fold.
+    private let explanation = "On days you didn't write, keepsake can show a photo you took instead. Nothing is copied or stored."
 
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.md) {
