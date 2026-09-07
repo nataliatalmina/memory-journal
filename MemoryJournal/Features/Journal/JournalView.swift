@@ -157,7 +157,6 @@ struct JournalView: View {
                 if isEmpty {
                     EmptyHomeView(today: today,
                                   hasAnyEntries: hasAnyEntries,
-                                  photoNote: photoNote,
                                   onCreate: openCreate)
                 } else {
                     populatedHome
@@ -304,18 +303,6 @@ struct JournalView: View {
     /// iOS Settings app, which backgrounds us on the way out.
     private var photoTaskKey: String {
         "\(lookbackMode.rawValue)|\(today.timeIntervalSince1970)|\(photoLookbackEnabled)|\(dismissalGeneration)|\(router.selectedTab)|\(scenePhase)"
-    }
-
-    /// A line for the empty state explaining why there are no photos, when there
-    /// is an honest explanation to give. Silent when the feature is off or the
-    /// user declined — neither is a situation that needs commentary.
-    private var photoNote: String? {
-        guard photoLookbackEnabled else { return nil }
-        switch photoAccess {
-        case .granted: return "No photos from this date either."
-        case .limited: return "keepsake can only see the photos you selected."
-        case .notDetermined, .denied: return nil
-        }
     }
 
     /// Look up one photo per empty look-back date.
@@ -472,10 +459,12 @@ private struct EmptyHomeView: View {
     let today: Date
     /// Whether the journal contains any entry at all (see `JournalView.hasAnyEntries`).
     let hasAnyEntries: Bool
-    /// An optional extra line explaining why photo look-back added nothing, when
-    /// the user has it switched on. `nil` most of the time.
-    let photoNote: String?
     let onCreate: () -> Void
+
+    // NOTE: this screen deliberately says nothing about photos. It is headed by
+    // TODAY's date, and photo look-back never looks at today (that slot is the
+    // invitation to write) — so a line here about there being no photos read as a
+    // claim about today, which the app never even checks.
 
     /// Two lines of copy, picked so the wording is always factually true. Saying
     /// "you haven't made any entries yet" to someone who wrote one last week (just
@@ -517,15 +506,6 @@ private struct EmptyHomeView: View {
             .font(.kyoto(size: 16))
             .foregroundStyle(Color.appBodyText)
             .padding(.top, Spacing.md)
-
-            // Only shown when the user turned photos on and we genuinely came up
-            // empty — otherwise the screen would look broken rather than quiet.
-            if let photoNote {
-                Text(photoNote)
-                    .font(.kyotoItalic(size: 14))
-                    .foregroundStyle(Color.appBodyText.opacity(0.7))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
 
             AppButton(title: "Create your memory", action: onCreate)
                 .frame(maxWidth: 300)
