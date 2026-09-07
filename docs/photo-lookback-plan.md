@@ -1,6 +1,6 @@
 # Photo look-back — implementation plan (Phase 7)
 
-**Status:** Phases 1–4 built (31 August 2026). Phase 5 (docs, policy, review prep) not started.
+**Status:** Complete. Phases 1–4 built 31 August 2026; Phase 5 (policy, docs, review prep) 7 September 2026.
 **Written:** 31 August 2026.
 
 ---
@@ -286,7 +286,14 @@ Four changes:
 
 ---
 
-## Phase 5 — Documentation, copy, and review prep
+## Phase 5 — Documentation, copy, and review prep ✅ BUILT
+
+*Done as planned, plus two additions:*
+
+- **`scripts/compare-privacy-policy.py`** diffs the in-app policy against the hosted copy and exits non-zero on any difference. CLAUDE.md requires the two to match word-for-word, and that requirement was previously enforced by remembering to check.
+- **`docs/app-review-notes.md`** holds the reviewer note, the pre-submission checklist, and what to do if 5.1.1(iv) comes up again.
+
+The hosted policy lives at **https://www.keepsakejournal.app/privacy-ios** (`privacy-ios.html` in the `memory-journal-website` repo). `/privacy` is the desktop app's separate policy — the plan originally named the wrong URL.
 
 Not deferrable past submission.
 

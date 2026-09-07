@@ -20,7 +20,7 @@ struct PrivacyPolicyView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.lg) {
-                    Text("Effective date: 19 June 2026")
+                    Text("Effective date: 7 September 2026")
                         .font(.kyoto(size: 13))
                         .foregroundStyle(Color.appBodyText.opacity(0.7))
 
@@ -46,12 +46,24 @@ struct PrivacyPolicyView: View {
                         "If you choose to add a photo or voice note to an entry, the file is saved inside the app's own private storage on your device. These files are never uploaded or shared by the app. Your entry stores only a reference to each file — never a copy on any server."
                     )
                     section(
+                        "Photos from this date",
+                        """
+                        On days you didn't write anything, keepsake can show a photo you took that day, in the place a past entry would appear. This is off unless you turn it on — in onboarding, or in Settings — and you can turn it off again at any time, which stops the app looking at your library at all.
+
+                        When it is on, keepsake asks iOS for permission to read your photo library, then looks for photos taken on the dates you're viewing. To choose one it reads each candidate's date, whether you marked it a favourite, and whether it is a screenshot (screenshots are skipped). Nothing else about your library is examined.
+
+                        Photos found this way are displayed straight from your library. They are never copied into the app, never stored by it, and never uploaded. If a photo isn't held on your device, iOS may fetch it from your own iCloud Photos in order to display it — that happens between your device and Apple, not through us.
+
+                        If you hide a photo you'd rather not see, keepsake records only that photo's identifier — the reference iOS uses to name it on this device — so it isn't offered again. You can clear that list with "Forget Hidden Photos" in Settings, and "Delete All Data" clears it too.
+                        """
+                    )
+                    section(
                         "Permissions you control",
                         """
                         keepsake may ask for access to your camera, photo library, and microphone. These are entirely optional and are used only to add media you choose to your own entries:
 
                         • Camera — to take a photo for an entry.
-                        • Photo library — to add a photo you select to an entry.
+                        • Photo library — to add a photo you select to an entry, and, if you turn on photo look-back, to find photos taken on the date you're viewing.
                         • Microphone — to record a voice note for an entry.
 
                         You can grant or revoke any of these at any time in the iOS Settings app, and the app works fully for text entries without any of them. Granting a permission does not send anything to us.
